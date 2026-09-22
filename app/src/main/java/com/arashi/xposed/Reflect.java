@@ -14,14 +14,6 @@ public final class Reflect {
         return Class.forName(name, false, cl);
     }
 
-    public static Class<?> findClassOrNull(String name, ClassLoader cl) {
-        try {
-            return Class.forName(name, false, cl);
-        } catch (Throwable t) {
-            return null;
-        }
-    }
-
     public static Method findMethodExact(Class<?> clazz, String name, Class<?>... params) {
         Class<?> c = clazz;
         while (c != null) {
@@ -36,11 +28,6 @@ public final class Reflect {
             }
         }
         return null;
-    }
-
-    public static Method findMethodExact(String className, ClassLoader cl,
-            String name, Class<?>... params) throws ClassNotFoundException {
-        return findMethodExact(findClass(className, cl), name, params);
     }
 
     public static Object getStaticObjectField(Class<?> clazz, String name) {

@@ -132,26 +132,6 @@ final class Ui {
         c.setOnClickListener(v -> action.run());
     }
 
-    static void demoSwitch(Activity a, LinearLayout parent, String title, String subtitle) {
-        LinearLayout c = card(a, parent, surface(a));
-        c.setMinimumHeight(dp(a, 80));
-        LinearLayout line = row(a);
-        c.addView(line, lp(-1, -2));
-        LinearLayout words = column(a);
-        line.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
-        words.addView(label(a, title, 16, text(a), true));
-        TextView note = label(a, subtitle, 13, secondary(a), false);
-        LinearLayout.LayoutParams np = lp(-1, -2);
-        np.topMargin = dp(a, 5);
-        words.addView(note, np);
-        ModernSwitch toggle = new ModernSwitch(a);
-        toggle.setContentDescription(title + "（演示开关）");
-        line.addView(toggle);
-        toggle.setOnCheckedChangeListener(checked -> {
-            if (checked) dialog(a, "界面演示", "这个开关尚未接入真实功能", "知道了");
-        });
-    }
-
     static void realSwitch(Activity a, LinearLayout parent, String title, String subtitle, 
                            String key, android.content.SharedPreferences prefs) {
         LinearLayout c = card(a, parent, surface(a));

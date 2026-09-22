@@ -13,7 +13,6 @@ import com.arashi.xposed.SettingsProvider;
 
 public final class Main extends BasePage {
     private TextView lsposedState;
-    private TextView zybosState;
 
     @Override protected void onResume() {
         super.onResume();
@@ -78,7 +77,7 @@ public final class Main extends BasePage {
         hero.postDelayed(this::updateModuleStatus, 6000);
         com.arashi.zybos.ZybosService.detect(this);
         boolean zybosAvailable = com.arashi.zybos.ZybosService.isAvailable();
-        zybosState = status(hero, "ZybosSysApiManager", zybosAvailable ? "可用" : "不可用");
+        TextView zybosState = status(hero, "ZybosSysApiManager", zybosAvailable ? "可用" : "不可用");
         zybosState.setTextColor(zybosAvailable ? Ui.STATUS_GREEN : Ui.STATUS_RED);
 
         Ui.section(this, content, "功能");

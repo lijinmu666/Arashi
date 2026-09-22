@@ -5,8 +5,6 @@ import android.os.IBinder;
 import android.util.Log;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 
 
@@ -19,7 +17,6 @@ public final class ZybosService {
     
     public static final String CLASS_MANAGER = "android.os.ZybosSysApiManager";
     
-    public static final String SERVICE_NAME = "zybos_manager";
     
     public static final String CLASS_IFACE = "android.os.IZybosSysApiManager";
     
@@ -151,8 +148,6 @@ public final class ZybosService {
     }
 
     public static boolean isAvailable() { return proxy != null || rawBinder != null; }
-    public static Object getManager() { return proxy; }
-    public static Class<?> getIfaceClass() { return ifaceClass; }
     public static String getLastError() { return lastError; }
 
     
@@ -278,35 +273,6 @@ public final class ZybosService {
 
     
 
-    public static Object invoke(String name, Class<?>[] paramTypes, Object... args) throws Exception {
-        Method m = findMethodOn(proxy != null ? proxy.getClass() : null, name, paramTypes);
-        if (m == null && ifaceClass != null) m = findMethodOn(ifaceClass, name, paramTypes);
-        if (m == null) throw new NoSuchMethodException(name);
-        m.setAccessible(true);
-        return m.invoke(proxy, args);
-    }
-
-    public static Object invokeSafe(String name, Class<?>[] paramTypes, Object... args) {
-        if (proxy == null) {
-            Log.w(TAG, "服务未就绪，忽略调用 " + name);
-            return null;
-        }
-        try {
-            Object r = invoke(name, paramTypes, args);
-            Log.i(TAG, "[+] " + name + " OK");
-            return r;
-        } catch (Throwable t) {
-            Log.w(TAG, "[!] " + name + " 失败: " + unwrap(t));
-            return null;
-        }
-    }
-
-    public static Method findMethod(String name, Class<?>... paramTypes) {
-        Method m = findMethodOn(proxy != null ? proxy.getClass() : null, name, paramTypes);
-        if (m == null && ifaceClass != null) m = findMethodOn(ifaceClass, name, paramTypes);
-        return m;
-    }
-
     private static Method findMethodOn(Class<?> cls, String name, Class<?>... paramTypes) {
         if (cls == null) return null;
         Class<?>[] types = paramTypes != null ? paramTypes : new Class<?>[0];
@@ -345,11 +311,4 @@ public final class ZybosService {
         return null;
     }
 
-    public static List<String> listMethodNames() {
-        List<String> out = new ArrayList<>();
-        Class<?> c = proxy != null ? proxy.getClass() : ifaceClass;
-        if (c == null) return out;
-        for (Method m : c.getMethods()) out.add(m.getName());
-        return out;
-    }
 }
