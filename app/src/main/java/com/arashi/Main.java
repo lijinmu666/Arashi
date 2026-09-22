@@ -69,7 +69,7 @@ public final class Main extends BasePage {
         heroLp.topMargin = Ui.dp(this, 28);
         hero.setLayoutParams(heroLp);
         hero.setPadding(Ui.dp(this, 24), Ui.dp(this, 24), Ui.dp(this, 24), Ui.dp(this, 24));
-        TextView version = Ui.label(this, "版本 0.2.1", 13, Ui.secondary(this), true);
+        TextView version = Ui.label(this, "版本 " + BuildConfig.VERSION_NAME, 13, Ui.secondary(this), true);
         hero.addView(version);
         lsposedState = status(hero, "LSPosed", "检测中");
         updateModuleStatus();

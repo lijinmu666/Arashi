@@ -7,4 +7,11 @@
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:colorAccent">#8066BF</item>
     </style>
+
+    <style name="Theme.Arashi.Installer" parent="@style/Theme.Arashi">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

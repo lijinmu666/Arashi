@@ -30,6 +30,7 @@ public final class ArashiSettings extends BasePage {
 
         Ui.section(this, content, "其他");
         launcherSwitch();
+        installerSwitch();
         Ui.link(this, content, "关于 Arashi", "有关 Arashi 的更多详细信息页",
                 () -> startActivity(new android.content.Intent(this, About.class)));
     }
@@ -63,6 +64,39 @@ public final class ArashiSettings extends BasePage {
             } catch (RuntimeException e) {
                 toggle.setChecked(!hidden);
                 Ui.dialog(this, "切换失败", "无法更改桌面图标状态：" + e.getMessage(), "知道了");
+            }
+        });
+    }
+
+    private void installerSwitch() {
+        LinearLayout card = Ui.card(this, content, Ui.surface(this));
+        LinearLayout row = Ui.row(this);
+        card.addView(row, Ui.lp(-1, -2));
+        LinearLayout words = Ui.column(this);
+        row.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+        words.addView(Ui.label(this, "启用 Arashi 安装器", 16, Ui.text(this), true));
+        TextView note = Ui.label(this, "启用后可在打开 APK 时选择 Arashi", 13,
+                Ui.secondary(this), false);
+        LinearLayout.LayoutParams np = Ui.lp(-1, -2);
+        np.topMargin = Ui.dp(this, 5);
+        words.addView(note, np);
+
+        ComponentName installer = new ComponentName(this, ApkInstallerActivity.class);
+        PackageManager pm = getPackageManager();
+        ModernSwitch toggle = new ModernSwitch(this);
+        toggle.setContentDescription("启用 Arashi 安装器");
+        toggle.setChecked(pm.getComponentEnabledSetting(installer)
+                != PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+        row.addView(toggle);
+        toggle.setOnCheckedChangeListener(enabled -> {
+            try {
+                pm.setComponentEnabledSetting(installer,
+                        enabled ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                                : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP);
+            } catch (RuntimeException e) {
+                toggle.setChecked(!enabled);
+                Ui.dialog(this, "切换失败", "无法更改安装器状态：" + e.getMessage(), "知道了");
             }
         });
     }

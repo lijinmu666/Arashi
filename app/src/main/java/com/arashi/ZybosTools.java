@@ -34,17 +34,17 @@ public final class ZybosTools extends BasePage {
         banner("系统特权工具", "利用 ZybosSysApiManager 无需权限为本设备执行安装、卸载应用等操作");
 
         Ui.section(this, content, "安装");
-        Ui.link(this, content, "选择 APK 文件安装", "从文件管理器中选择 APK 进行安装",
+        Ui.link(this, content, "选择 APK 文件安装", "从文件管理器中选择 APK 安装",
                 this::pickApk);
-        Ui.link(this, content, "输入 APK 路径安装", "输入 APK 的绝对路径，如 /sdcard/xxx.apk",
-                () -> prompt("安装 APK", "APK 绝对路径", "", path -> {
+        Ui.link(this, content, "输入 APK 路径安装", "输入 APK 的路径",
+                () -> prompt("安装 APK", "/sdcard/Download/MyApp.apk", "", path -> {
                     if (path.isEmpty()) return;
                     installApk(path);
                 }));
 
         Ui.section(this, content, "卸载");
         Ui.link(this, content, "卸载应用", "输入应用包名进行卸载",
-                () -> prompt("卸载应用", "应用包名", "", pkg -> {
+                () -> prompt("卸载应用", "com.example.kskblzdjd", "", pkg -> {
                     if (pkg.isEmpty()) return;
                     uninstallApk(pkg);
                 }));
@@ -81,7 +81,7 @@ public final class ZybosTools extends BasePage {
         new Thread(() -> {
             String path = resolvePath(uri);
             if (path == null || path.isEmpty()) {
-                showResult("无法取得原文件路径", "此文件来源只提供 content:// 地址，无法确定系统安装接口可使用的真实路径。请在本机文件管理器中选择共享存储里的 APK，或使用「输入 APK 路径安装」。");
+                showResult("无法解析路径", "此文件来源只提供 content:// 地址，解析真实路径时出错。请在本机文件管理器中选择共享存储里的 APK，或使用「输入 APK 路径安装");
             } else {
                 installApk(path);
             }
@@ -132,7 +132,7 @@ public final class ZybosTools extends BasePage {
     private void installApk(String path) {
         new Thread(() -> {
             if (!ZybosService.detect(this)) {
-                showResult("不可用", "未检测到 ZybosSysApiManager，本设备可能不是 AibangOS。");
+                showResult("不可用", "未检测到 ZybosSysApiManager");
                 return;
             }
             String pkg = resolvePackageName(path);

@@ -11,7 +11,7 @@ public final class About extends BasePage {
         version.addView(Ui.label(this, "版本号", 15, Ui.secondary(this), false));
         LinearLayout.LayoutParams vp = Ui.lp(-1, -2);
         vp.topMargin = Ui.dp(this, 5);
-        version.addView(Ui.label(this, "0.2.1", 22, Ui.text(this), true), vp);
+        version.addView(Ui.label(this, BuildConfig.VERSION_NAME, 22, Ui.text(this), true), vp);
 
         LinearLayout author = Ui.card(this, content, Ui.surface(this));
         author.addView(Ui.label(this, "作者", 15, Ui.secondary(this), false));
