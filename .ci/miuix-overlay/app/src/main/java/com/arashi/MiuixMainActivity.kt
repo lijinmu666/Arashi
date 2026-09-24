@@ -69,7 +69,7 @@ private fun MiuixHome(activity: ComponentActivity) {
             }
             val reportedBoot = activity.getSharedPreferences(
                 SettingsProvider.STATUS_PREF_NAME,
-                ComponentActivity.MODE_PRIVATE,
+                android.content.Context.MODE_PRIVATE,
             ).getInt(SettingsProvider.KEY_SYSTEM_SERVER_BOOT, -1)
             val hookActive = boot >= 0 && reportedBoot == boot
             Triple(brand, usable, hookActive)
