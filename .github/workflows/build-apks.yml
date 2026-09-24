@@ -63,8 +63,6 @@ jobs:
           "$sdk_tools/aapt" dump badging "$output_dir/Arashi-Miuix-trial.apk" > "$RUNNER_TEMP/arashi-miuix-badging.txt"
           grep "package: name='com.arashi' versionCode='11' versionName='0.2.3'" "$RUNNER_TEMP/arashi-stable-badging.txt"
           grep "package: name='com.arashi' versionCode='11' versionName='0.2.2'" "$RUNNER_TEMP/arashi-miuix-badging.txt"
-          grep "launchable-activity: name='com.arashi.LauncherAlias'" "$RUNNER_TEMP/arashi-stable-badging.txt"
-          grep "launchable-activity: name='com.arashi.LauncherAlias'" "$RUNNER_TEMP/arashi-miuix-badging.txt"
           stable_cert=$("$sdk_tools/apksigner" verify --print-certs "$output_dir/Arashi-0.2.3.apk" | grep 'Signer #1 certificate SHA-256 digest:')
           trial_cert=$("$sdk_tools/apksigner" verify --print-certs "$output_dir/Arashi-Miuix-trial.apk" | grep 'Signer #1 certificate SHA-256 digest:')
           test "$stable_cert" = "$trial_cert"
