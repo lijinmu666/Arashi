@@ -38,7 +38,7 @@ jobs:
           cp -a .ci/miuix-overlay/. "$trial_dir/"
           sed -i '/^android\.aapt2FromMavenOverride=/d' "$stable_dir/gradle.properties" "$trial_dir/gradle.properties"
           mkdir -p "$RUNNER_TEMP/arashi-apks"
-          sdkmanager 'platforms;android-34' 'platforms;android-36' 'build-tools;34.0.0' 'build-tools;35.0.0' 'build-tools;36.0.0'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-34' 'platforms;android-36' 'build-tools;34.0.0' 'build-tools;35.0.0' 'build-tools;36.0.0'
       - name: 编译 0.2.3
         shell: bash
         run: |
