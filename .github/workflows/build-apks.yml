@@ -1,0 +1,97 @@
+name: 编译 Arashi 0.2.3 与 Miuix 测试 APK
+
+on:
+  push:
+    branches:
+      - build/apks-20260923
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arashi-apks-20260923
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: 准备正式版与试验版源码
+        shell: bash
+        run: |
+          set -euo pipefail
+          trial_dir="$RUNNER_TEMP/arashi-miuix"
+          stable_dir="$RUNNER_TEMP/arashi-stable"
+          git worktree add --detach "$stable_dir" 380ce6c053ebaea848ced1ff2aa57840457b2c66
+          git worktree add --detach "$trial_dir" 9d200c48b59536614fd17109df5e1982c0519169
+          cp -a .ci/miuix-overlay/. "$trial_dir/"
+          sed -i '/^android\.aapt2FromMavenOverride=/d' "$stable_dir/gradle.properties" "$trial_dir/gradle.properties"
+          mkdir -p "$RUNNER_TEMP/arashi-apks"
+          sdkmanager 'platforms;android-34' 'platforms;android-36' 'build-tools;34.0.0' 'build-tools;35.0.0' 'build-tools;36.0.0'
+      - name: 编译 0.2.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p "$RUNNER_TEMP/arashi-stable" :app:assembleDebug --no-daemon --stacktrace
+          cp "$RUNNER_TEMP/arashi-stable/app/build/outputs/apk/debug/app-debug.apk" "$RUNNER_TEMP/arashi-apks/Arashi-0.2.3.apk"
+      - name: 编译 Miuix 试验版
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p "$RUNNER_TEMP/arashi-miuix" :app:assembleDebug --no-daemon --stacktrace
+          cp "$RUNNER_TEMP/arashi-miuix/app/build/outputs/apk/debug/app-debug.apk" "$RUNNER_TEMP/arashi-apks/Arashi-Miuix-trial.apk"
+      - name: 校验签名和 APK 内容
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_tools="$ANDROID_HOME/build-tools/36.0.0"
+          output_dir="$RUNNER_TEMP/arashi-apks"
+          "$sdk_tools/apksigner" verify --verbose --print-certs "$output_dir/Arashi-0.2.3.apk"
+          "$sdk_tools/apksigner" verify --verbose --print-certs "$output_dir/Arashi-Miuix-trial.apk"
+          "$sdk_tools/aapt" dump badging "$output_dir/Arashi-0.2.3.apk" > "$RUNNER_TEMP/arashi-stable-badging.txt"
+          "$sdk_tools/aapt" dump badging "$output_dir/Arashi-Miuix-trial.apk" > "$RUNNER_TEMP/arashi-miuix-badging.txt"
+          grep "package: name='com.arashi' versionCode='11' versionName='0.2.3'" "$RUNNER_TEMP/arashi-stable-badging.txt"
+          grep "package: name='com.arashi' versionCode='11' versionName='0.2.2'" "$RUNNER_TEMP/arashi-miuix-badging.txt"
+          grep "launchable-activity: name='com.arashi.LauncherAlias'" "$RUNNER_TEMP/arashi-stable-badging.txt"
+          grep "launchable-activity: name='com.arashi.LauncherAlias'" "$RUNNER_TEMP/arashi-miuix-badging.txt"
+          stable_cert=$("$sdk_tools/apksigner" verify --print-certs "$output_dir/Arashi-0.2.3.apk" | grep 'Signer #1 certificate SHA-256 digest:')
+          trial_cert=$("$sdk_tools/apksigner" verify --print-certs "$output_dir/Arashi-Miuix-trial.apk" | grep 'Signer #1 certificate SHA-256 digest:')
+          test "$stable_cert" = "$trial_cert"
+          for apk in "$output_dir/Arashi-0.2.3.apk" "$output_dir/Arashi-Miuix-trial.apk"; do
+            unzip -t "$apk" | tail -1
+            test "$(unzip -p "$apk" META-INF/xposed/java_init.list)" = 'com.arashi.xposed.HookEntry'
+          done
+          sha256sum "$output_dir/Arashi-0.2.3.apk" "$output_dir/Arashi-Miuix-trial.apk"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arashi-test-apks
+          path: ${{ runner.temp }}/arashi-apks/*.apk
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: 临时上传两份 APK 到 main 根目录
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          publish_dir="$RUNNER_TEMP/arashi-publish"
+          git worktree add --detach "$publish_dir" origin/main
+          cp "$RUNNER_TEMP/arashi-apks/Arashi-0.2.3.apk" "$publish_dir/Arashi-0.2.3.apk"
+          cp "$RUNNER_TEMP/arashi-apks/Arashi-Miuix-trial.apk" "$publish_dir/Arashi-Miuix-trial.apk"
+          git -C "$publish_dir" config user.name 'github-actions[bot]'
+          git -C "$publish_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$publish_dir" add -f -- Arashi-0.2.3.apk Arashi-Miuix-trial.apk
+          git -C "$publish_dir" commit -m '临时提供 0.2.3 与 Miuix 试验版已签名 APK'
+          git -C "$publish_dir" push origin HEAD:refs/heads/main
+          git -C "$publish_dir" rev-parse HEAD
