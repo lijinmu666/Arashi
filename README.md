@@ -74,7 +74,7 @@ app/src/main/kotlin/com/arashi/ui/MiuixPages.kt
 
 ## 本地编译
 
-项目使用 AGP `9.3.0`、Gradle Wrapper `9.7.1` 和 Android SDK `37`。请配置兼容的 JDK 与 Android SDK。
+项目使用 AGP `9.3.0`、Gradle Wrapper `9.7.1` 和 Android SDK `36`。请配置兼容的 JDK 与 Android SDK。
 
 ```powershell
 .\gradlew.bat :app:assembleRelease
