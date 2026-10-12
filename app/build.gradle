@@ -12,7 +12,7 @@ if (hasSigningConfig) {
 
 android {
     namespace = 'com.arashi'
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId 'com.arashi'
         minSdk = 31
