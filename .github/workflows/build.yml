@@ -37,7 +37,7 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'cmdline-tools;latest'
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list --channel=3 > "$RUNNER_TEMP/sdk-packages.txt"
           grep -E 'platforms;android-|build-tools;37|cmdline-tools;' "$RUNNER_TEMP/sdk-packages.txt"
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --channel=3 'platforms;android-37' 'build-tools;37.0.0'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --channel=3 'platforms;android-37.0' 'build-tools;37.0.0'
       - name: 准备签名
         id: signing
         env:
