@@ -1023,6 +1023,14 @@ private fun QuickPage(a: QuickCommands) = Page(a, "快捷指令执行", a::finis
         Link("打开 special_enable_adb_debug", "打开 AIBangOS 的售后后门设置") { set("打开 special_enable_adb_debug", "special_enable_adb_debug", 1) }
         Link("关闭 special_enable_adb_debug", "与上方设置排斥") { set("关闭 special_enable_adb_debug", "special_enable_adb_debug", 0) }
     }
+    Group("投屏") {
+        Link("开启投屏", "启用无线显示，并请求 SystemUI 添加投屏磁贴") {
+            a.run("开启投屏", "settings put global wifi_display_on 1 && am broadcast --user current -a com.android.systemui.cast.Add -p com.android.systemui")
+        }
+        Link("关闭投屏", "关闭无线显示，并请求 SystemUI 移除投屏磁贴") {
+            a.run("关闭投屏", "settings put global wifi_display_on 0 && am broadcast --user current -a com.android.systemui.cast.Remove -p com.android.systemui")
+        }
+    }
     InfoCard("KSU 请手动授权，Magisk 弹窗时请允许授权。Arashi 不会执行危险指令，请确保文件来自正规渠道！")
 }
 
