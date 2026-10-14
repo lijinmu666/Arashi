@@ -1,4 +1,4 @@
-name: 编译 Arashi APK
+name: 编译 Arashi 0.9.3 APK
 
 on:
   push:
