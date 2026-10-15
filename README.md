@@ -90,3 +90,7 @@ app/src/main/kotlin/com/arashi/ui/MiuixPages.kt
 需要签名时，在项目根目录自行创建 `keystore.properties`，配置 `storeFile`、`storePassword`、`keyAlias` 和 `keyPassword`，并准备自己的签名文件。这些文件以及 `local.properties`、缓存、备份和构建产物均不提交到仓库。
 
 使用自己的签名编译的 APK 会触发应用内的签名不匹配提示。
+
+## 许可证
+
+Arashi 版权所有 © 2026 lijinmu666，采用 GNU General Public License v3.0 only（SPDX：`GPL-3.0-only`）授权，详见 [LICENSE](LICENSE)。
