@@ -4,9 +4,14 @@ Arashi 是面向作业帮学习机 AIBangOS 的 LSPosed 模块和系统工具，
 
 系统内部相关组件使用 Zybos 命名。安装、卸载等特权工具依赖设备提供的 `ZybosSysApiManager`；不同固件的接口和限制可能存在差异。
 
+## 版本记录
+
+- [更新记录](CHANGELOG.md)
+- [提交与版本索引](docs/HISTORY.md)
+
 ## 下载与使用
 
-签名 APK 放在 [GitHub Releases](https://github.com/lijinmu666/Arashi/releases)，源码分支只保留项目文件。
+下载入口：[GitHub Releases](https://github.com/lijinmu666/Arashi/releases) · [GitHub Actions](https://github.com/lijinmu666/Arashi/actions)。主分支保留项目源码。Actions 未配置正式签名时，提供测试签名 APK 和未签名 Release APK；未签名包需要签名后安装，测试签名包不能直接覆盖不同签名的已安装版本。
 
 1. 安装 Arashi，在支持 libxposed API 102 的 LSPosed 管理器中启用模块。
 2. 按需要勾选系统框架及对应应用作用域，然后重启设备。
