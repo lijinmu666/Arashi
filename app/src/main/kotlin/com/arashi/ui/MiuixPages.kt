@@ -479,7 +479,17 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
                         else entry.summary + "\n" + scopes.unavailableReason(entry.key),
                     enabled = available,
                 )
-                if (entry.key == HookConfig.KEY_KEEP_BACKGROUND && checked) {
+                AnimatedVisibility(
+                    visible = entry.key == HookConfig.KEY_KEEP_BACKGROUND && checked,
+                    enter = expandVertically(
+                        animationSpec = tween(250, easing = FastOutSlowInEasing),
+                        expandFrom = Alignment.Top,
+                    ) + fadeIn(animationSpec = tween(200)),
+                    exit = shrinkVertically(
+                        animationSpec = tween(250, easing = FastOutSlowInEasing),
+                        shrinkTowards = Alignment.Top,
+                    ) + fadeOut(animationSpec = tween(150)),
+                ) {
                     ArrowPreference(
                         title = "后台保留白名单",
                         summary = if (backgroundSelected.isEmpty()) "未选择应用，默认保留全部"
