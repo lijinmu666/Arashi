@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'app/**'
+      - 'tests/**'
       - '*.gradle'
       - 'gradle.properties'
       - 'gradle/**'
@@ -30,6 +31,12 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+      - name: 验证后台保留白名单规则
+        shell: bash
+        run: |
+          set -euo pipefail
+          javac -d "$RUNNER_TEMP/background-tests" app/src/main/java/com/arashi/xposed/BackgroundPolicy.java tests/BackgroundPolicyCheck.java
+          java -cp "$RUNNER_TEMP/background-tests" BackgroundPolicyCheck
       - name: 安装 Android SDK
         shell: bash
         run: |
