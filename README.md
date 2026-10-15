@@ -11,7 +11,8 @@ Arashi 是面向作业帮学习机 AIBangOS 的 LSPosed 模块和系统工具，
 
 ## 下载与使用
 
-下载入口：[GitHub Releases](https://github.com/lijinmu666/Arashi/releases) · [GitHub Actions](https://github.com/lijinmu666/Arashi/actions)。主分支保留项目源码。Actions 未配置正式签名时，提供测试签名 APK 和未签名 Release APK；未签名包需要签名后安装，测试签名包不能直接覆盖不同签名的已安装版本。
+下载入口：[QQ群](https://qun.qq.com/universal-share/share?ac=1&authKey=i%2Bh3ZyTelsMfhjWvc8srNCHnS4BMGrsr4hj1fDcEXx0fC5ECgHyUjh45kS5qiQ3W&busi_data=eyJncm91cENvZGUiOiIxMTI1MTkwMzUwIiwidG9rZW4iOiIrRFg2KzdBTHhRRlZKODZjUUt2U2gySFRBaHFBeFNIYTdFTFc0emcydXJuTEZsN1dvS3MwT1J4ZFF2dnNJNUhOIiwidWluIjoiODQxNTYzNjAifQ%3D%3D&data=PB0LIOhizgFR_GzQFzdDn6FEbw0rzkzMw5JbqCzMZp0t72lHOOiSfSqMcISpvsGOvjkcACA_44t9aKGSV3GaNQ&svctype=4&tempid=h5_group_info)
+提供最新版的安装包
 
 1. 安装 Arashi，在支持 libxposed API 102 的 LSPosed 管理器中启用模块。
 2. 按需要勾选系统框架及对应应用作用域，然后重启设备。
