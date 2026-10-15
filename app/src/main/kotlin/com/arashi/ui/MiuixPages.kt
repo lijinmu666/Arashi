@@ -404,7 +404,7 @@ private data class HookItem(val title: String, val summary: String, val key: Str
 
 @Composable
 private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) {
-    IntroCard("首次使用请启用模块、勾选推荐作用域并重启系统\n系统框架按本次开机的 Hook 状态检测，应用作用域在此页面实时检测\n未检测到对应作用域时开关不可用，已保存的设置会保留\n修改应用作用域后需重启对应应用，修改系统框架作用域后需重启系统")
+    IntroCard("首次使用请启用模块、勾选推荐作用域并重启系统。系统框架按本次开机的 Hook 状态检测，应用作用域在此页面实时检测。未检测到对应作用域时开关不可用，已保存的设置会保留。修改应用作用域后需重启对应应用，修改系统框架作用域后需重启系统")
     val prefs = a.getSharedPreferences(HookConfig.PREF_NAME, Context.MODE_PRIVATE)
     var backgroundSelected by remember {
         mutableStateOf(prefs.getStringSet(HookConfig.KEY_KEEP_BACKGROUND_WHITELIST, emptySet()).orEmpty().toSet())
@@ -433,23 +433,23 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
         "安装" to listOf(
             HookItem("外部应用安装支持", "跳过系统安装器的设备限制检查，允许通过安装器安装外部 APK", HookConfig.KEY_EXTERNAL_INSTALL),
             HookItem("允许 Shell 安装", "放行 adb install 和 pm install 的安装权限检查，允许通过电脑或终端安装应用", HookConfig.KEY_SHELL_INSTALL),
-            HookItem("清除安装黑名单", "清空系统内置的安装黑名单和相关限制列表，允许安装被这些名单拦截的应用\n开关控制重启系统后生效", HookConfig.KEY_CLEAR_BLACKLIST),
+            HookItem("清除安装黑名单", "清空系统内置的安装黑名单和相关限制列表，允许安装被这些名单拦截的应用。开关控制重启系统后生效", HookConfig.KEY_CLEAR_BLACKLIST),
         ),
         "行为" to listOf(
             HookItem("开发者选项支持", "放行开发者选项的开启状态检查，允许打开开发者选项及其子页面", HookConfig.KEY_DEV_OPTIONS),
-            HookItem("保留后台进程", "拦截划卡时对所选应用的强停请求，保留其后台进程\n白名单为空时保留全部应用", HookConfig.KEY_KEEP_BACKGROUND),
+            HookItem("保留后台进程", "拦截划卡时对所选应用的强停请求，保留其后台进程。白名单为空时保留全部应用", HookConfig.KEY_KEEP_BACKGROUND),
             HookItem("USB 设备支持", "跳过系统的 USB 禁用判断，允许连接和使用外部 USB 设备", HookConfig.KEY_ALLOW_USB),
             HookItem("壁纸设置支持", "放行应用设置壁纸的权限检查，允许壁纸应用修改系统壁纸", HookConfig.KEY_ALLOW_WALLPAPER),
             HookItem("Wi-Fi 认证登录支持", "跳过认证页面的设备校验和 VPN 检测，允许打开需要网页认证的 Wi-Fi 登录页面", HookConfig.KEY_CAPTIVE_PORTAL),
             HookItem("解除应用详情页限制", "跳过应用详情页黑名单判断，允许打开 WebView、report 服务和 PadMs 等应用的详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
-            HookItem("阻止 SystemUI 重设默认浏览器", "拦截 SystemUI 开机时设置默认浏览器的请求，保留当前默认浏览器\n开关控制重启系统后生效", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
-            HookItem("阻止系统应用自动更新", "从应用商店的自动更新队列中移除系统应用，阻止自动下载和更新\n用户应用仍按商店原有开关自动更新，手动更新不受影响", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
+            HookItem("阻止 SystemUI 重设默认浏览器", "拦截 SystemUI 开机时设置默认浏览器的请求，保留当前默认浏览器。开关控制重启系统后生效", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
+            HookItem("阻止系统应用自动更新", "从应用商店的自动更新队列中移除系统应用，阻止自动下载和更新。用户应用仍按商店原有开关自动更新，手动更新不受影响", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
             HookItem("隐藏开发者模式和 ADB 状态", "向普通应用返回开发者模式、USB 调试和无线调试均已关闭，隐藏对应设置状态", HookConfig.KEY_HIDE_ADB),
         ),
         "管控" to listOf(
             HookItem("拦截管控强停和任务清理", "在系统框架中拦截管控服务的强停应用和移除任务请求，保留应用进程及最近任务", HookConfig.KEY_BLOCK_SUPERVISE),
             HookItem("阻止使用时长上报", "拦截管控服务的使用时长上传方法，阻止向服务器上报应用使用时长", HookConfig.KEY_BLOCK_USAGE_REPORT),
-            HookItem("解除应用禁用", "将应用可用性查询结果改为允许，绕过应用禁用和时长限制\n已禁用的应用可能需要先从其他应用打开一次，才能从桌面启动", HookConfig.KEY_NEUTRALIZE_POLICY),
+            HookItem("解除应用禁用", "将应用可用性查询结果改为允许，绕过应用禁用和时长限制。已禁用的应用可能需要先从其他应用打开一次，才能从桌面启动", HookConfig.KEY_NEUTRALIZE_POLICY),
             HookItem("解除页面屏蔽", "将受限页面查询结果置空，允许打开被管控规则屏蔽的应用页面", HookConfig.KEY_NEUTRALIZE_ADVANCE),
             HookItem("拦截超时锁屏", "拦截管控服务的超时处理，避免达到整机时长限制或超出可用时段后触发锁屏", HookConfig.KEY_NO_TIMEOUT_LOCK),
         ),
@@ -473,7 +473,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
                     },
                     title = entry.title,
                     summary = if (available) entry.summary
-                        else entry.summary + "\n" + scopes.unavailableReason(entry.key),
+                        else entry.summary + "。" + scopes.unavailableReason(entry.key),
                     enabled = available,
                 )
                 if (entry.key == HookConfig.KEY_DEV_OPTIONS) {
@@ -517,7 +517,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
                                 }
                             },
                             title = "注入开发者选项入口",
-                            summary = "向设置侧边菜单加入入口，在右侧面板打开开发者选项\n修改后重启设置应用生效",
+                            summary = "向设置侧边菜单加入入口，在右侧面板打开开发者选项。修改后重启设置应用生效",
                             enabled = available,
                         )
                     }
