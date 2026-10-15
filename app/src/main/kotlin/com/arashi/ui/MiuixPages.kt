@@ -454,11 +454,11 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
         ),
         "行为" to listOf(
             HookItem("开发者选项支持", "放行开发者选项的开启状态检查，允许打开开发者选项的 Activity", HookConfig.KEY_DEV_OPTIONS),
-            HookItem("保留后台进程", "拦截划卡后强杀应用进程。开关修改立即生效", HookConfig.KEY_KEEP_BACKGROUND),
-            HookItem("USB 设备支持", "允许连接外部 USB 设备", HookConfig.KEY_ALLOW_USB),
+            HookItem("保留后台进程", "拦截划卡后强杀应用进程。开关控制立即生效", HookConfig.KEY_KEEP_BACKGROUND),
+            HookItem("USB 文件传输支持", "允许连接挂载外部 USB 设备", HookConfig.KEY_ALLOW_USB),
             HookItem("壁纸设置支持", "允许任意应用修改系统壁纸", HookConfig.KEY_ALLOW_WALLPAPER),
             HookItem("认证型 WiFi 登录支持", "允许认证型 WiFi 跳转网页", HookConfig.KEY_CAPTIVE_PORTAL),
-            HookItem("解除应用详情页限制", "允许打开 WebView、report服务和 PadMs 的应用设置详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
+            HookItem("解除应用详情页限制", "允许打开 WebView、report服务 和 PadMs 的应用设置详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
             HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将“学习网站”设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
             HookItem("阻止系统应用自动更新", "拦截应用商店静默自动下载和更新系统应用", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
             HookItem("隐藏开发者环境", "向普通应用 (UID ≥ 10000) 返回开发者模式、USB 调试和无线调试已关闭的状态", HookConfig.KEY_HIDE_ADB),
@@ -553,7 +553,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
                     ArrowPreference(
                         title = "后台保留白名单",
                         summary = if (backgroundSelected.isEmpty()) "目前划卡后保留所有应用后台进程"
-                            else "目前划卡后保留已选择的 ${backgroundSelected.size} 个应用",
+                            else "目前划卡后只保留已选择的 ${backgroundSelected.size} 个应用",
                         onClick = {
                             a.startActivity(Intent(a, BackgroundWhitelistActivity::class.java))
                         },
