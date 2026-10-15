@@ -444,7 +444,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("解除应用详情页限制", "允许打开 WebView、report服务和 PadMs 的应用设置详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
             HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将“学习网站”设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
             HookItem("阻止系统应用自动更新", "拦截应用商店静默自动下载和更新系统应用", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
-            HookItem("隐藏开发者环境", "向普通应用 (UID ≥:10000) 返回开发者模式、USB 调试和无线调试已关闭的状态", HookConfig.KEY_HIDE_ADB),
+            HookItem("隐藏开发者环境", "向普通应用 (UID ≥ 10000) 返回开发者模式、USB 调试和无线调试已关闭的状态", HookConfig.KEY_HIDE_ADB),
         ),
         "管控" to listOf(
             HookItem("拦截管控强停和任务清理", "从 SystemServer 层拦截管控服务的强杀应用和移除任务行为", HookConfig.KEY_BLOCK_SUPERVISE),
@@ -545,7 +545,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             }
         }
     }
-    InfoCard("开关修改后自动保存，生效方式见各项说明")
+    InfoCard("开关修改后自动保存")
 }
 
 private data class BackgroundChoice(val packageName: String, val label: String)
