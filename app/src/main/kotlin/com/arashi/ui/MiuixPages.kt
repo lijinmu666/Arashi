@@ -148,8 +148,8 @@ object MiuixPages {
         a.runOnUiThread {
             messageState(a).value = Message(
                 "签名验证",
-                "当前应用与原作者签名不匹配，安装包可能被篡改，请确保从官方渠道安装 Arashi！点击确定可继续使用",
-                "确定",
+                "当前应用与原作者签名不匹配，安装包可能被篡改！点击仍可继续使用",
+                "哦",
             )
         }
     }
@@ -380,7 +380,7 @@ private fun HomePage(a: Main) = Page(a, "Arashi") {
         Link("卸载验证设置", "验证发起的卸载请求") { a.startActivity(Intent(a, UninstallSettings::class.java)) }
         Link("快捷指令执行", "调整设置、冻结应用等快捷操作") { a.startActivity(Intent(a, QuickCommands::class.java)) }
         Link("系统特权工具", "利用 ZybosSysApiManager 执行系统操作") { a.startActivity(Intent(a, ZybosTools::class.java)) }
-        Link("应用偏好设置", "配置主题、外观等") { a.startActivity(Intent(a, ArashiSettings::class.java)) }
+        Link("应用偏好设置", "配置外观等") { a.startActivity(Intent(a, ArashiSettings::class.java)) }
     }
 }
 
@@ -388,11 +388,11 @@ private fun HomePage(a: Main) = Page(a, "Arashi") {
 private fun UnsupportedDevicePage(a: Main) = Page(a, "Arashi") {
     OverlayDialog(
         show = true,
-        summary = "当前系统无法正常使用 Arashi 功能",
+        summary = "当前系统可能无法正常使用 Arashi 功能",
         onDismissRequest = a::continueAfterCompatibilityWarning,
     ) {
         TextButton(
-            "确定",
+            "哦",
             a::continueAfterCompatibilityWarning,
             Modifier.fillMaxWidth(),
             colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -404,7 +404,7 @@ private data class HookItem(val title: String, val summary: String, val key: Str
 
 @Composable
 private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) {
-    InfoCard("LSPosed", "系统框架按本次开机的 Hook 状态检测，应用作用域在此页面实时检测；未检测到对应作用域时开关不可用，原设置保留；修改应用作用域后请重启目标应用，系统框架需重启设备；首次使用请启用模块、勾选作用域并重启")
+    InfoCard("LSPosed", "系统框架按本次开机的 Hook 状态检测，未检测到对应作用域时开关不可用。修改应用作用域后请强行停止对应应用，部分 Hook 需重启设备开关才会生效。第一次使用请启用模块、勾选作用域并重启")
     val prefs = a.getSharedPreferences(HookConfig.PREF_NAME, Context.MODE_PRIVATE)
     var backgroundSelected by remember {
         mutableStateOf(prefs.getStringSet(HookConfig.KEY_KEEP_BACKGROUND_WHITELIST, emptySet()).orEmpty().toSet())
@@ -431,19 +431,19 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
     }
     val groups = listOf(
         "安装" to listOf(
-            HookItem("外部应用安装支持", "允许直接在软件包安装程序中安装应用", HookConfig.KEY_EXTERNAL_INSTALL),
+            HookItem("外部应用安装支持", "允许在软件包安装程序中安装和更新应用", HookConfig.KEY_EXTERNAL_INSTALL),
             HookItem("Shell 安装支持", "允许 adb install 和 pm install 安装应用", HookConfig.KEY_SHELL_INSTALL),
-            HookItem("清除安装黑名单", "允许安装并硬编码在系统里的 5 个黑名单应用", HookConfig.KEY_CLEAR_BLACKLIST),
+            HookItem("清除安装黑名单", "允许安装并硬编码在系统里的5个黑名单应用", HookConfig.KEY_CLEAR_BLACKLIST),
         ),
         "行为" to listOf(
-            HookItem("开发者选项支持", "允许打开 “开发者选项” 设置的活动", HookConfig.KEY_DEV_OPTIONS),
+            HookItem("开发者选项支持", "允许打开 “开发者选项” 设置的 Activity", HookConfig.KEY_DEV_OPTIONS),
             HookItem("保留后台进程", "划卡后不杀白名单中的应用进程；白名单为空时保留全部", HookConfig.KEY_KEEP_BACKGROUND),
             HookItem("USB 设备支持", "允许挂载和使用外部 USB 设备", HookConfig.KEY_ALLOW_USB),
             HookItem("壁纸设置支持", "允许任意应用设置壁纸（可以用壁纸引擎等）", HookConfig.KEY_ALLOW_WALLPAPER),
             HookItem("WiFi 登录支持", "允许正常连接认证型 WiFi", HookConfig.KEY_CAPTIVE_PORTAL),
             HookItem("清除详情页黑名单", "允许打开 WebView、report服务、PadMs 的应用设置详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
             HookItem("阻止重置默认浏览器", "阻止 SystemUI 每次开机强制设置“学习网站”为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
-            HookItem("阻止系统应用自动更新", "阻止应用商店自动下载并更新系统应用；用户应用更新仍受应用商店原有开关控制", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
+            HookItem("阻止系统应用自动更新", "阻止应用商店自动下载并更新系统应用，不影响用户应用更新", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
             HookItem("隐藏调试状态", "普通应用 (UID≥10000) 只会读取到 开发者模式 和 ADB 已关闭", HookConfig.KEY_HIDE_ADB),
         ),
         "管控" to listOf(
@@ -1576,11 +1576,11 @@ private fun AboutPage(a: About) = Page(a, "关于 Arashi", a::finish) {
             if (versionTapCount >= 7) {
                 versionTapCount = 0
                 lastVersionTapAt = 0L
-                MiuixPages.showMessage(a, "I LOVE U , Starry Sky", "肖肖我爱你") //棍母
+                MiuixPages.showMessage(a, "棍母棍母棍母", "棍母棍母棍母") 
             }
     })
-    AboutCard("作者", "LiJinMu", arrow = true, onClick = {
-        MiuixPages.showMessage(a, "关于作者", "开发者 : 李瑾沐\n小红书 & 抖音 : failgacha\nQQ 昵称 : H...Hey")
+    AboutCard("作者", "李瑾沐", arrow = true, onClick = {
+        MiuixPages.showMessage(a, "关于作者", "首席开发者 : 李瑾沐\n小红书号 : failgacha\nQQ 昵称 : H...Hey")
     })
     AboutCard("QQ 群聊", "加入 Arashi 用户交流与反馈群", arrow = true, compactValue = true, onClick = {
         qq = true
@@ -1674,7 +1674,7 @@ private fun InstallerProgressPage(
     }
     Card(Modifier.fillMaxWidth(), insideMargin = PaddingValues(18.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("正在安装，请稍候", style = MiuixTheme.textStyles.title3)
+            Text("正在安装…", style = MiuixTheme.textStyles.title3)
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), height = 8.dp)
             Text(
                 "安装包较大时可能需要一些时间",
