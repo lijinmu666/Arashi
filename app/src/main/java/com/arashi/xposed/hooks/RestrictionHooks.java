@@ -10,6 +10,7 @@ import com.arashi.xposed.HookConfig;
 import com.arashi.xposed.Reflect;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 public final class RestrictionHooks {
 
@@ -90,6 +91,19 @@ hookDetailBlacklist(mod, cl);
         } catch (Throwable t) {
             Log.w(TAG, "isDisabledDetailApp hook failed: " + t);
         }
+    }
+
+    private static Method findStaticBool(Class<?> clz, String name, int paramCount) {
+        for (Method method : clz.getDeclaredMethods()) {
+            if (name.equals(method.getName())
+                    && Modifier.isStatic(method.getModifiers())
+                    && method.getParameterCount() == paramCount
+                    && method.getReturnType() == boolean.class) {
+                method.setAccessible(true);
+                return method;
+            }
+        }
+        return null;
     }
 
 }
