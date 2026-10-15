@@ -163,13 +163,30 @@ object MiuixPages {
     private fun render(a: Activity, page: @Composable () -> Unit) {
         a.setContentView(ComposeView(a).apply {
             setContent {
-                val mode = a.getSharedPreferences("ui", Context.MODE_PRIVATE).getInt("mode", 0)
+                val uiPrefs = remember(a) { a.getSharedPreferences("ui", Context.MODE_PRIVATE) }
+                var mode by remember(uiPrefs) { mutableIntStateOf(uiPrefs.getInt("mode", 0)) }
+                var colorScheme by remember(uiPrefs) {
+                    mutableIntStateOf(uiPrefs.getInt("color_scheme", 0))
+                }
+                DisposableEffect(uiPrefs) {
+                    val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+                        when (key) {
+                            "mode" -> mode = prefs.getInt("mode", 0)
+                            "color_scheme" -> colorScheme = prefs.getInt("color_scheme", 0)
+                        }
+                    }
+                    uiPrefs.registerOnSharedPreferenceChangeListener(listener)
+                    onDispose { uiPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
+                }
+                val usePurple = colorScheme != 1
                 val dark = when (mode) {
                     1 -> false
                     2 -> true
                     else -> isSystemInDarkTheme()
                 }
-                val colors = if (dark) {
+                val colors = if (!usePurple) {
+                    if (dark) darkColorScheme() else lightColorScheme()
+                } else if (dark) {
                     darkColorScheme(
                         primary = Color(0xFFB69CFF),
                         primaryVariant = Color(0xFF9B7BFA),
@@ -1451,6 +1468,9 @@ private fun SettingsPage(a: ArashiSettings) = Page(a, "应用偏好设置", a::f
     var selectedTheme by remember {
         mutableIntStateOf(themeModes.indexOf(prefs.getInt("mode", 0)).coerceAtLeast(0))
     }
+    var selectedColorScheme by remember {
+        mutableIntStateOf(if (prefs.getInt("color_scheme", 0) == 1) 1 else 0)
+    }
     var hidden by remember { mutableStateOf(a.isLauncherHidden) }
     var installer by remember { mutableStateOf(a.isInstallerEnabled) }
     var android12BlacklistHook by remember {
@@ -1469,6 +1489,16 @@ private fun SettingsPage(a: ArashiSettings) = Page(a, "应用偏好设置", a::f
         onDispose { a.lifecycle.removeObserver(observer) }
     }
     Group("外观") {
+        OverlayDropdownPreference(
+            items = listOf("Arashi 紫色", "Miuix 默认蓝色"),
+            selectedIndex = selectedColorScheme,
+            title = "配色设置",
+            onSelectedIndexChange = { index ->
+                selectedColorScheme = index
+                prefs.edit().putInt("color_scheme", index).apply()
+                a.recreate()
+            },
+        )
         OverlayDropdownPreference(
             items = themeNames,
             selectedIndex = selectedTheme,
