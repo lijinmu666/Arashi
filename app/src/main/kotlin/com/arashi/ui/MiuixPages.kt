@@ -404,7 +404,7 @@ private data class HookItem(val title: String, val summary: String, val key: Str
 
 @Composable
 private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) {
-    InfoCard("LSPosed", "系统框架按本次开机的 Hook 状态检测，应用作用域在此页面实时检测。未检测到对应作用域时开关不可用，原设置保留。修改应用作用域后请重启目标应用；系统框架需重启设备。首次使用请启用模块、勾选作用域并重启")
+    InfoCard("LSPosed", "系统框架按本次开机的 Hook 状态检测，应用作用域在此页面实时检测；未检测到对应作用域时开关不可用，原设置保留；修改应用作用域后请重启目标应用，系统框架需重启设备；首次使用请启用模块、勾选作用域并重启")
     val prefs = a.getSharedPreferences(HookConfig.PREF_NAME, Context.MODE_PRIVATE)
     var backgroundSelected by remember {
         mutableStateOf(prefs.getStringSet(HookConfig.KEY_KEEP_BACKGROUND_WHITELIST, emptySet()).orEmpty().toSet())
@@ -434,6 +434,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("外部应用安装支持", "允许直接在软件包安装程序中安装应用", HookConfig.KEY_EXTERNAL_INSTALL),
             HookItem("Shell 安装支持", "允许 adb install 和 pm install 安装应用", HookConfig.KEY_SHELL_INSTALL),
             HookItem("清除安装黑名单", "允许安装并硬编码在系统里的 5 个黑名单应用", HookConfig.KEY_CLEAR_BLACKLIST),
+            HookItem("阻止系统应用自动更新", "阻止应用商店自动下载并更新系统应用；用户应用更新仍受应用商店原有开关控制", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
         ),
         "行为" to listOf(
             HookItem("开发者选项支持", "允许打开 “开发者选项” 设置的活动", HookConfig.KEY_DEV_OPTIONS),
@@ -447,14 +448,10 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
         ),
         "管控" to listOf(
             HookItem("阻止管控服务", "从 SystemServer 层拦截管控服务强杀应用、清理任务行为", HookConfig.KEY_BLOCK_SUPERVISE),
-            HookItem("应用禁用失效", "时间限额、应用禁用不生效，允许打开当前不可用的应用。被禁用的应用需要从其它应用打开一次后才能从桌面打开", HookConfig.KEY_NEUTRALIZE_POLICY),
+            HookItem("屏蔽使用时长上报", "阻止管控服务向服务器上报应用使用时长", HookConfig.KEY_BLOCK_USAGE_REPORT),
+            HookItem("应用禁用失效", "时间限额、应用禁用不生效，允许打开当前不可用的应用；被禁用的应用需要从其它应用打开一次后才能从桌面打开", HookConfig.KEY_NEUTRALIZE_POLICY),
             HookItem("页面屏蔽失效", "按页面屏蔽的功能不生效，允许访问被禁止的某一个页面", HookConfig.KEY_NEUTRALIZE_ADVANCE),
             HookItem("解除超时锁屏", "允许整机超时或越过可用时段后继续使用", HookConfig.KEY_NO_TIMEOUT_LOCK),
-            HookItem("屏蔽行为上报", "阻止 SystemUI 和 Settings 等应用行为上报", HookConfig.KEY_HIDE_ALERT),
-        ),
-        "实验" to listOf(
-            HookItem("虚拟屏幕支持", "解除360浏览器的虚拟显示器创建限制", HookConfig.KEY_ALLOW_DISPLAY),
-            HookItem("跨包通知支持", "允许任意应用以其他应用名义发送通知", HookConfig.KEY_UNRESTRICT_NOTIFY),
         ),
     )
     groups.forEach { (name, entries) ->
@@ -479,6 +476,51 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
                         else entry.summary + "\n" + scopes.unavailableReason(entry.key),
                     enabled = available,
                 )
+                if (entry.key == HookConfig.KEY_DEV_OPTIONS) {
+                    var injectDeveloperMenu by remember {
+                        mutableStateOf(
+                            prefs.getBoolean(
+                                HookConfig.KEY_DEV_OPTIONS_MENU,
+                                HookConfig.defaultEnabled(HookConfig.KEY_DEV_OPTIONS_MENU),
+                            ),
+                        )
+                    }
+                    DisposableEffect(prefs) {
+                        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                            if (key == HookConfig.KEY_DEV_OPTIONS_MENU) {
+                                injectDeveloperMenu = prefs.getBoolean(
+                                    HookConfig.KEY_DEV_OPTIONS_MENU,
+                                    HookConfig.defaultEnabled(HookConfig.KEY_DEV_OPTIONS_MENU),
+                                )
+                            }
+                        }
+                        prefs.registerOnSharedPreferenceChangeListener(listener)
+                        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+                    }
+                    AnimatedVisibility(
+                        visible = checked,
+                        enter = expandVertically(
+                            animationSpec = tween(250, easing = FastOutSlowInEasing),
+                            expandFrom = Alignment.Top,
+                        ) + fadeIn(animationSpec = tween(200)),
+                        exit = shrinkVertically(
+                            animationSpec = tween(250, easing = FastOutSlowInEasing),
+                            shrinkTowards = Alignment.Top,
+                        ) + fadeOut(animationSpec = tween(150)),
+                    ) {
+                        SwitchPreference(
+                            checked = injectDeveloperMenu,
+                            onCheckedChange = {
+                                if (available) {
+                                    injectDeveloperMenu = it
+                                    prefs.edit().putBoolean(HookConfig.KEY_DEV_OPTIONS_MENU, it).apply()
+                                }
+                            },
+                            title = "注入 开发者选项 至设置侧边菜单",
+                            enabled = available,
+                        )
+                    }
+                }
                 AnimatedVisibility(
                     visible = entry.key == HookConfig.KEY_KEEP_BACKGROUND && checked,
                     enter = expandVertically(
@@ -567,7 +609,7 @@ private fun BackgroundWhitelistPage(a: BackgroundWhitelistActivity) {
         ) {
             item {
                 InfoCard("仅控制划卡后的进程保留",
-                    "选中的应用划卡后不会被强杀；一个也不选时默认保留全部。系统原有豁免应用不显示，仍按系统规则保留。选择后立即保存")
+                    "选中的应用划卡后不会被强杀；一个也不选时默认保留全部；系统原有豁免应用不显示，仍按系统规则保留；选择后立即保存")
             }
             item {
                 TextField(value = query, onValueChange = { query = it },
@@ -657,7 +699,7 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
     var duration by remember {
         mutableIntStateOf(durations.indexOf(prefs.getInt(UninstallConfig.TIMEOUT_SECONDS, 10)).coerceAtLeast(0))
     }
-    InfoCard("卸载验证", "当系统尝试卸载应用时，会向你询问是否允许。细化并管理每一次卸载请求")
+    InfoCard("卸载验证", "当系统尝试卸载应用时，会向你询问是否允许；细化并管理每一次卸载请求")
     Group("验证") {
         SwitchPreference(
             checked = enabled && moduleActive,
@@ -669,7 +711,7 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
             },
             title = "启用卸载验证",
             summary = if (moduleActive) "每次卸载请求将会弹窗向你确认"
-                else "未检测到 system_server Hook，卸载验证暂时关闭。激活后会恢复此前的开启状态",
+                else "未检测到 system_server Hook，卸载验证暂时关闭；激活后会恢复此前的开启状态",
             enabled = moduleActive,
         )
         SwitchPreference(
@@ -679,7 +721,7 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
                 prefs.edit().putBoolean(UninstallConfig.TIMEOUT_ENABLED, it).apply()
             },
             title = "启用超时计时",
-            summary = "验证弹窗在设定秒数内未确认默认拒绝。关闭后仍有 30 秒系统安全上限，超时默认拒绝",
+            summary = "验证弹窗在设定秒数内未确认默认拒绝；关闭后仍有 30 秒系统安全上限，超时默认拒绝",
         )
         AnimatedVisibility(
             visible = timeoutEnabled,
@@ -707,7 +749,7 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
         Link("白名单", "白名单中的发起方不会弹窗向你确认，直接允许") {
             a.startActivity(Intent(a, UninstallListActivity::class.java).putExtra("blacklist", false))
         }
-        Link("黑名单", "与白名单排斥，黑名单直接拒绝卸载。优先于白名单") {
+        Link("黑名单", "与白名单排斥，黑名单直接拒绝卸载；优先于白名单") {
             a.startActivity(Intent(a, UninstallListActivity::class.java).putExtra("blacklist", true))
         }
     }
@@ -782,7 +824,7 @@ private fun UninstallHistoryPage(a: UninstallHistoryActivity) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                InfoCard("卸载验证决定", "记录已捕获的卸载请求，包括黑白名单、弹窗、超时及验证未启用时的放行；允许不代表系统最终卸载成功。")
+                InfoCard("卸载验证决定", "记录已捕获的卸载请求，包括黑白名单、弹窗、超时及验证未启用时的放行；允许不代表系统最终卸载成功")
             }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -857,7 +899,7 @@ private fun UninstallHistoryPage(a: UninstallHistoryActivity) {
     OverlayDialog(
         show = confirmClear,
         title = "清空卸载记录",
-        summary = "确定清空全部卸载记录吗？此操作无法撤销。",
+        summary = "确定清空全部卸载记录吗？此操作无法撤销",
         onDismissRequest = { confirmClear = false },
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -954,7 +996,7 @@ private fun UninstallListPage(a: UninstallListActivity, blacklist: Boolean) {
             item {
                 InfoCard(
                     title,
-                    if (blacklist) "选中的发起方直接拒绝卸载" else "选中的发起方直接允许卸载。黑名单优先",
+                    if (blacklist) "选中的发起方直接拒绝卸载" else "选中的发起方直接允许卸载；黑名单优先",
                 )
             }
             item {
@@ -1180,7 +1222,7 @@ private fun QuickPage(a: QuickCommands) = Page(a, "快捷指令执行", a::finis
             a.run("关闭投屏", "settings put global wifi_display_on 0 && am broadcast --user current -a com.android.systemui.cast.Remove -p com.android.systemui")
         }
     }
-    InfoCard("KSU 请手动授权，Magisk 弹窗时请允许授权。官方版 Arashi 不会执行危险指令")
+    InfoCard("KSU 请手动授权，Magisk 弹窗时请允许授权；官方版 Arashi 不会执行危险指令")
 }
 
 @Composable
@@ -1378,7 +1420,7 @@ private fun ZybosUninstallPickerPage(a: ZybosUninstallPickerActivity) {
                 title = "确认卸载",
                 summary = pending?.let {
                     it.title + "\n" + it.key +
-                        (if (it.kind == 2) "\n将卸载更新并恢复系统预装版本。" else "\n将卸载此应用。")
+                        (if (it.kind == 2) "\n将卸载更新并恢复系统预装版本" else "\n将卸载此应用")
                 },
                 onDismissRequest = { pending = null },
             ) {
@@ -1444,7 +1486,7 @@ private fun SettingsPage(a: ArashiSettings) = Page(a, "应用偏好设置", a::f
             },
             title = "兼容安卓12清除安装黑名单",
             summary = if (isAndroid12) {
-                "安卓12 改用 PMS 方法，是否清除仍由 Hook 功能设置控制。修改后重启生效"
+                "安卓12 改用 PMS 方法，是否清除仍由 Hook 功能设置控制；修改后重启生效"
             } else {
                 "本功能仅适用于安卓12，当前系统自动使用对应的 Hook 路径"
             },
