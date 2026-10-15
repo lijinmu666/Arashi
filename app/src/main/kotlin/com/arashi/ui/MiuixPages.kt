@@ -434,7 +434,6 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("外部应用安装支持", "允许直接在软件包安装程序中安装应用", HookConfig.KEY_EXTERNAL_INSTALL),
             HookItem("Shell 安装支持", "允许 adb install 和 pm install 安装应用", HookConfig.KEY_SHELL_INSTALL),
             HookItem("清除安装黑名单", "允许安装并硬编码在系统里的 5 个黑名单应用", HookConfig.KEY_CLEAR_BLACKLIST),
-            HookItem("阻止系统应用自动更新", "阻止应用商店自动下载并更新系统应用；用户应用更新仍受应用商店原有开关控制", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
         ),
         "行为" to listOf(
             HookItem("开发者选项支持", "允许打开 “开发者选项” 设置的活动", HookConfig.KEY_DEV_OPTIONS),
@@ -444,6 +443,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("WiFi 登录支持", "允许正常连接认证型 WiFi", HookConfig.KEY_CAPTIVE_PORTAL),
             HookItem("清除详情页黑名单", "允许打开 WebView、report服务、PadMs 的应用设置详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
             HookItem("阻止重置默认浏览器", "阻止 SystemUI 每次开机强制设置“学习网站”为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
+            HookItem("阻止系统应用自动更新", "阻止应用商店自动下载并更新系统应用；用户应用更新仍受应用商店原有开关控制", HookConfig.KEY_BLOCK_SYSTEM_APP_AUTO_UPDATE),
             HookItem("隐藏调试状态", "普通应用 (UID≥10000) 只会读取到 开发者模式 和 ADB 已关闭", HookConfig.KEY_HIDE_ADB),
         ),
         "管控" to listOf(

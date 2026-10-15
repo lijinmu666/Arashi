@@ -42,7 +42,19 @@ public final class DevOptionsHooks {
 
         hookDeveloperPanelHostCompatibility(mod, cl);
 
+        hookDeveloperSubPageNavigation(mod, cl);
+
+        hookDeveloperPreferenceNavigation(mod, cl);
+
         hookDeveloperPanelPause(mod, cl);
+
+        hookWirelessDebuggingHostCompatibility(mod, cl);
+
+        hookDeveloperAppPickerTheme(mod, cl);
+
+        hookGraphicsDriverHostCompatibility(mod, cl);
+
+        hookMemoryDetailNavigation(mod, cl);
 
         Log.i(TAG, "settings hooks initialized");
     }
@@ -192,8 +204,389 @@ public final class DevOptionsHooks {
                 }
                 return result;
             });
+            hookPanelSwitchVisibility(mod, fragmentClass,
+                    "developer_options_main_switch_title");
         } catch (Throwable error) {
             Log.w(TAG, "developer panel pause hook failed: " + error);
+        }
+    }
+
+    /** Keep Settings' nested developer pages inside ZybSettings' right-hand pane. */
+    private static void hookDeveloperSubPageNavigation(XposedModule mod, ClassLoader cl) {
+        try {
+            Class<?> launcherClass = Class.forName(
+                    "com.android.settings.core.SubSettingLauncher", false, cl);
+            Method method = Reflect.findMethodExact(launcherClass, "launch", android.content.Intent.class);
+            if (method == null) {
+                Log.w(TAG, "SubSettingLauncher.launch(Intent) not found");
+                return;
+            }
+            mod.hook(method).intercept(chain -> {
+                Object launcher = chain.getThisObject();
+                Object context = Reflect.getObjectField(launcher, "mContext");
+                if (context == null || !"com.android.settings.zyb.ZybSettings".equals(
+                        context.getClass().getName())) {
+                    return chain.proceed();
+                }
+                android.content.Intent intent = (android.content.Intent) chain.getArg(0);
+                Method navigate = Reflect.findMethodExact(context.getClass(),
+                        "launchInnerSettingFragment", android.content.Intent.class);
+                if (navigate == null) {
+                    Log.w(TAG, "ZybSettings inner navigation method not found");
+                    return chain.proceed();
+                }
+                navigate.invoke(context, intent);
+                Log.i(TAG, "developer subpage opened in ZybSettings panel: "
+                        + intent.getStringExtra(":settings:show_fragment"));
+                return null;
+            });
+            Log.i(TAG, "developer subpage navigation hook registered");
+        } catch (Throwable error) {
+            Log.w(TAG, "developer subpage navigation hook failed: " + error);
+        }
+    }
+
+    /** XML fragment preferences use PreferenceFragmentCompat, not SubSettingLauncher. */
+    private static void hookDeveloperPreferenceNavigation(XposedModule mod, ClassLoader cl) {
+        try {
+            Class<?> preferenceFragment = Class.forName(
+                    "androidx.preference.PreferenceFragmentCompat", false, cl);
+            Class<?> preferenceClass = Class.forName("androidx.preference.Preference", false, cl);
+            Method method = Reflect.findMethodExact(preferenceFragment,
+                    "onPreferenceTreeClick", preferenceClass);
+            if (method == null) return;
+            mod.hook(method).intercept(chain -> {
+                Object fragment = chain.getThisObject();
+                if (!fragment.getClass().getName().startsWith("com.android.settings.development.")) {
+                    return chain.proceed();
+                }
+                Object activity = Reflect.callMethod(fragment, "getActivity");
+                if (activity == null || !"com.android.settings.zyb.ZybSettings".equals(
+                        activity.getClass().getName())) return chain.proceed();
+                Object preference = chain.getArg(0);
+                String destination = (String) Reflect.callMethod(preference, "getFragment");
+                if (destination == null || destination.isEmpty()) return chain.proceed();
+                Method navigate = Reflect.findMethodExact(activity.getClass(),
+                        "launchInnerSettingFragment", android.content.Intent.class);
+                if (navigate == null) return chain.proceed();
+                android.content.Intent intent = new android.content.Intent();
+                intent.putExtra(":settings:show_fragment", destination);
+                intent.putExtra(":settings:show_fragment_args",
+                        (Bundle) Reflect.callMethod(preference, "getExtras"));
+                navigate.invoke(activity, intent);
+                Log.i(TAG, "developer preference opened in ZybSettings panel: " + destination);
+                return true;
+            });
+        } catch (Throwable error) {
+            Log.w(TAG, "developer preference navigation hook failed: " + error);
+        }
+    }
+
+    /** WirelessDebuggingFragment also assumes its Activity is a SettingsActivity. */
+    private static void hookWirelessDebuggingHostCompatibility(XposedModule mod, ClassLoader cl) {
+        try {
+            Class<?> fragmentClass = Class.forName(
+                    "com.android.settings.development.WirelessDebuggingFragment", false, cl);
+            Method method = Reflect.findMethodExact(fragmentClass, "onActivityCreated", Bundle.class);
+            if (method == null) {
+                Log.w(TAG, "wireless debugging onActivityCreated not found");
+                return;
+            }
+            mod.hook(method).intercept(chain -> {
+                try {
+                    return chain.proceed();
+                } catch (ClassCastException error) {
+                    Object fragment = chain.getThisObject();
+                    Object activity = Reflect.callMethod(fragment, "getActivity");
+                    if (activity == null || !"com.android.settings.zyb.ZybSettings".equals(
+                            activity.getClass().getName())) {
+                        throw error;
+                    }
+                    try {
+                        Object switchBar = Reflect.callMethod(activity, "getSwitchBar");
+                        if (switchBar == null) throw error;
+                        int titleId = ((Context) activity).getResources().getIdentifier(
+                                "wireless_debugging_main_switch_title", "string", "com.android.settings");
+                        if (titleId != 0) {
+                            switchBar.getClass().getMethod("setTitle", CharSequence.class)
+                                    .invoke(switchBar, ((Context) activity).getString(titleId));
+                        }
+                        Reflect.callMethod(switchBar, "show");
+                        Class<?> controllerClass = Class.forName(
+                                "com.android.settings.widget.MainSwitchBarController", false, cl);
+                        Class<?> switchBarClass = Class.forName(
+                                "com.android.settings.widget.SettingsMainSwitchBar", false, cl);
+                        Object controller = controllerClass.getConstructor(switchBarClass)
+                                .newInstance(switchBar);
+                        Class<?> enablerClass = Class.forName(
+                                "com.android.settings.development.WirelessDebuggingEnabler", false, cl);
+                        Class<?> lifecycleClass = Class.forName(
+                                "com.android.settingslib.core.lifecycle.Lifecycle", false, cl);
+                        Object lifecycle = Reflect.callMethod(fragment, "getSettingsLifecycle");
+                        Constructor<?> enablerConstructor = enablerClass.getConstructor(
+                                Context.class, Class.forName(
+                                        "com.android.settings.widget.SwitchWidgetController", false, cl),
+                                Class.forName(
+                                        "com.android.settings.development.WirelessDebuggingEnabler$OnEnabledListener",
+                                        false, cl), lifecycleClass);
+                        Object enabler = enablerConstructor.newInstance(activity, controller, fragment, lifecycle);
+                        setField(fragment, "mWifiDebuggingEnabler", enabler);
+                        Log.i(TAG, "wireless debugging attached to ZybSettings switch bar");
+                        return null;
+                    } catch (Throwable recoveryError) {
+                        Log.w(TAG, "wireless debugging host adaptation failed: " + recoveryError);
+                        return null;
+                    }
+                }
+            });
+            Log.i(TAG, "wireless debugging host compatibility hook registered");
+
+            Method onPause = Reflect.findMethodExact(fragmentClass, "onPause");
+            if (onPause != null) {
+                mod.hook(onPause).intercept(chain -> {
+                    Object result = chain.proceed();
+                    Object activity = Reflect.callMethod(chain.getThisObject(), "getActivity");
+                    if (activity != null && "com.android.settings.zyb.ZybSettings".equals(
+                            activity.getClass().getName())) {
+                        Object switchBar = Reflect.callMethod(activity, "getSwitchBar");
+                        if (switchBar != null) Reflect.callMethod(switchBar, "hide");
+                    }
+                    return result;
+                });
+            }
+            hookPanelSwitchVisibility(mod, fragmentClass,
+                    "wireless_debugging_main_switch_title");
+        } catch (Throwable error) {
+            Log.w(TAG, "wireless debugging host compatibility hook failed: " + error);
+        }
+    }
+
+    private static void hookGraphicsDriverHostCompatibility(XposedModule mod, ClassLoader cl) {
+        try {
+            Class<?> fragmentClass = Class.forName(
+                    "com.android.settings.development.graphicsdriver.GraphicsDriverDashboard", false, cl);
+            Method onCreate = Reflect.findMethodExact(fragmentClass, "onActivityCreated", Bundle.class);
+            if (onCreate == null) return;
+            mod.hook(onCreate).intercept(chain -> {
+                try {
+                    return chain.proceed();
+                } catch (ClassCastException error) {
+                    Object fragment = chain.getThisObject();
+                    Object activity = Reflect.callMethod(fragment, "getActivity");
+                    if (activity == null || !"com.android.settings.zyb.ZybSettings".equals(
+                            activity.getClass().getName())) throw error;
+                    Object switchBar = Reflect.callMethod(activity, "getSwitchBar");
+                    if (switchBar == null) throw error;
+                    Class<?> switchControllerClass = Class.forName(
+                            "com.android.settings.widget.MainSwitchBarController", false, cl);
+                    Object switchController = switchControllerClass.getConstructor(Class.forName(
+                            "com.android.settings.widget.SettingsMainSwitchBar", false, cl))
+                            .newInstance(switchBar);
+                    Class<?> controllerClass = Class.forName(
+                            "com.android.settings.development.graphicsdriver.GraphicsDriverGlobalSwitchBarController",
+                            false, cl);
+                    Constructor<?> constructor = controllerClass.getDeclaredConstructor(Context.class,
+                            Class.forName("com.android.settings.widget.SwitchWidgetController", false, cl));
+                    constructor.setAccessible(true);
+                    Object controller = constructor.newInstance(activity, switchController);
+                    Object lifecycle = Reflect.callMethod(fragment, "getSettingsLifecycle");
+                    Method addObserver = Reflect.findMethodExact(lifecycle.getClass(), "addObserver",
+                            Class.forName("androidx.lifecycle.LifecycleObserver", false, cl));
+                    if (addObserver == null) throw new NoSuchMethodException("Lifecycle.addObserver");
+                    addObserver.invoke(lifecycle, controller);
+                    setPanelSwitchVisible(fragment, "graphics_driver_main_switch_title", false);
+                    Log.i(TAG, "graphics driver dashboard attached to ZybSettings switch bar");
+                    return null;
+                }
+            });
+            hookPanelSwitchVisibility(mod, fragmentClass, "graphics_driver_main_switch_title");
+            Method onPause = Reflect.findMethodExact(fragmentClass, "onPause");
+            if (onPause != null) {
+                mod.hook(onPause).intercept(chain -> {
+                    Object result = chain.proceed();
+                    if (fragmentClass.isInstance(chain.getThisObject())) {
+                        setPanelSwitchVisible(chain.getThisObject(), "graphics_driver_main_switch_title", true);
+                    }
+                    return result;
+                });
+            }
+        } catch (Throwable error) {
+            Log.w(TAG, "graphics driver host compatibility hook failed: " + error);
+        }
+    }
+
+    private static void hookMemoryDetailNavigation(XposedModule mod, ClassLoader cl) {
+        try {
+            Class<?> fragmentClass = Class.forName(
+                    "com.android.settings.applications.ProcessStatsUi", false, cl);
+            Class<?> preferenceClass = Class.forName("androidx.preference.Preference", false, cl);
+            Class<?> statsPreferenceClass = Class.forName(
+                    "com.android.settings.applications.ProcessStatsPreference", false, cl);
+            Method onClick = Reflect.findMethodExact(fragmentClass, "onPreferenceTreeClick", preferenceClass);
+            if (onClick == null) return;
+            mod.hook(onClick).intercept(chain -> {
+                Object fragment = chain.getThisObject();
+                Object activity = Reflect.callMethod(fragment, "getActivity");
+                Object preference = chain.getArg(0);
+                if (activity == null || !"com.android.settings.zyb.ZybSettings".equals(
+                        activity.getClass().getName()) || !statsPreferenceClass.isInstance(preference)) {
+                    return chain.proceed();
+                }
+                Object manager = Reflect.getObjectField(fragment, "mStatsManager");
+                Object memInfo = Reflect.callMethod(manager, "getMemInfo");
+                Object entry = Reflect.callMethod(preference, "getEntry");
+                // Match ProcessStatsBase.launchMemoryDetail without its SettingsActivity parameter.
+                Bundle args = new Bundle();
+                args.putParcelable("package_entry", (android.os.Parcelable) entry);
+                double weightToRam = ((Number) Reflect.getObjectField(memInfo, "weightToRam")).doubleValue();
+                args.putDouble("weight_to_ram", weightToRam);
+                args.putLong("total_time", ((Number) Reflect.getObjectField(memInfo, "memTotalTime")).longValue());
+                args.putDouble("max_memory_usage",
+                        ((Number) Reflect.getObjectField(memInfo, "usedWeight")).doubleValue() * weightToRam);
+                args.putDouble("total_scale", ((Number) Reflect.getObjectField(memInfo, "totalScale")).doubleValue());
+                android.content.Intent intent = new android.content.Intent();
+                intent.putExtra(":settings:show_fragment",
+                        "com.android.settings.applications.ProcessStatsDetail");
+                intent.putExtra(":settings:show_fragment_args", args);
+                intent.putExtra(":settings:source_metrics", 0);
+                int title = ((Context) activity).getResources().getIdentifier(
+                        "memory_usage", "string", "com.android.settings");
+                intent.putExtra(":settings:show_fragment_title_resid", title);
+                Method navigate = Reflect.findMethodExact(activity.getClass(),
+                        "launchInnerSettingFragment", android.content.Intent.class);
+                if (navigate == null) throw new NoSuchMethodException("launchInnerSettingFragment");
+                navigate.invoke(activity, intent);
+                Log.i(TAG, "memory application detail opened in ZybSettings panel");
+                return true;
+            });
+        } catch (Throwable error) {
+            Log.w(TAG, "memory detail navigation hook failed: " + error);
+        }
+    }
+
+    /** The vendor theme has no platform ActionBar, but AppPicker requires one. */
+    private static void hookDeveloperAppPickerTheme(XposedModule mod, ClassLoader cl) {
+        try {
+            Class<?> pickerClass = Class.forName(
+                    "com.android.settings.development.AppPicker", false, cl);
+            Method onCreate = Reflect.findMethodExact(pickerClass, "onCreate", Bundle.class);
+            if (onCreate == null) return;
+            mod.hook(onCreate).intercept(chain -> {
+                if (ConfigManager.isEnabled(HookConfig.KEY_DEV_OPTIONS)) {
+                    android.app.Activity activity = (android.app.Activity) chain.getThisObject();
+                    int nightMode = activity.getResources().getConfiguration().uiMode
+                            & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+                    activity.setTheme(nightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                            ? android.R.style.Theme_DeviceDefault
+                            : android.R.style.Theme_DeviceDefault_Light);
+                }
+                return chain.proceed();
+            });
+        } catch (Throwable error) {
+            Log.w(TAG, "developer app picker theme hook failed: " + error);
+        }
+    }
+
+    private static void hookPanelSwitchVisibility(XposedModule mod, Class<?> fragmentClass,
+                                                  String titleResource) {
+        try {
+            Method onResume = Reflect.findMethodExact(fragmentClass, "onResume");
+            if (onResume != null) {
+                mod.hook(onResume).intercept(chain -> {
+                    Object result = chain.proceed();
+                    if (fragmentClass.isInstance(chain.getThisObject())) {
+                        setPanelSwitchVisible(chain.getThisObject(), titleResource, false);
+                    }
+                    return result;
+                });
+            }
+            Method onHiddenChanged = Reflect.findMethodExact(fragmentClass,
+                    "onHiddenChanged", boolean.class);
+            if (onHiddenChanged != null) {
+                mod.hook(onHiddenChanged).intercept(chain -> {
+                    Object result = chain.proceed();
+                    if (fragmentClass.isInstance(chain.getThisObject())) {
+                        setPanelSwitchVisible(chain.getThisObject(), titleResource,
+                                (Boolean) chain.getArg(0));
+                    }
+                    return result;
+                });
+            }
+        } catch (Throwable error) {
+            Log.w(TAG, "panel switch visibility hook failed: " + error);
+        }
+    }
+
+    private static void setPanelSwitchVisible(Object fragment, String titleResource,
+                                               boolean hidden) {
+        try {
+            Object activity = Reflect.callMethod(fragment, "getActivity");
+            if (activity == null || !"com.android.settings.zyb.ZybSettings".equals(
+                    activity.getClass().getName())) return;
+            Object switchBar = Reflect.callMethod(activity, "getSwitchBar");
+            if (switchBar == null) return;
+            if (hidden || (Boolean) Reflect.callMethod(fragment, "isHidden")) {
+                Reflect.callMethod(switchBar, "hide");
+                return;
+            }
+            fitSwitchBarToRightPanel((android.app.Activity) activity,
+                    (android.view.View) switchBar, fragment);
+            int titleId = ((Context) activity).getResources().getIdentifier(
+                    titleResource, "string", "com.android.settings");
+            if (titleId != 0) {
+                switchBar.getClass().getMethod("setTitle", CharSequence.class)
+                        .invoke(switchBar, ((Context) activity).getString(titleId));
+            }
+            Reflect.callMethod(switchBar, "show");
+        } catch (Throwable error) {
+            Log.w(TAG, "panel switch visibility update failed: " + error);
+        }
+    }
+
+    /** The vendor layout places switch_bar above both panes and leaves an empty 96dp title. */
+    private static void fitSwitchBarToRightPanel(android.app.Activity activity,
+                                                 android.view.View switchBar, Object fragment)
+            throws Exception {
+        int contentId = activity.getResources().getIdentifier(
+                "main_content", "id", "com.android.settings");
+        android.view.View content = activity.findViewById(contentId);
+        if (content == null || !(content.getParent() instanceof android.view.ViewGroup)) return;
+        android.view.ViewGroup contentParent = (android.view.ViewGroup) content.getParent();
+        if (switchBar.getParent() != contentParent) {
+            if (!(switchBar.getParent() instanceof android.view.ViewGroup)) return;
+            android.view.ViewGroup switchParent = (android.view.ViewGroup) switchBar.getParent();
+            int contentIndex = contentParent.indexOfChild(content);
+            android.view.ViewGroup.LayoutParams panelParams = content.getLayoutParams();
+            android.widget.LinearLayout.LayoutParams switchParams =
+                    new android.widget.LinearLayout.LayoutParams(switchBar.getLayoutParams());
+            switchParams.width = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+            switchParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+            switchParams.weight = 0;
+            android.widget.LinearLayout panel = new android.widget.LinearLayout(activity);
+            panel.setOrientation(android.widget.LinearLayout.VERTICAL);
+            switchParent.removeView(switchBar);
+            contentParent.removeView(content);
+            panel.addView(switchBar, switchParams);
+            // Preserve main_content's ID for Settings' fragment navigation and back stack.
+            panel.addView(content, new android.widget.LinearLayout.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+            contentParent.addView(panel, contentIndex, panelParams);
+            Log.i(TAG, "developer switch bar moved into right panel");
+        }
+        android.view.View fragmentView = (android.view.View) Reflect.callMethod(fragment, "getView");
+        if (fragmentView == null) return;
+        int titleId = activity.getResources().getIdentifier(
+                "title_container", "id", "com.android.settings");
+        android.view.View emptyTitle = fragmentView.findViewById(titleId);
+        if (emptyTitle != null) emptyTitle.setVisibility(android.view.View.GONE);
+        android.view.View list = fragmentView.findViewById(android.R.id.list_container);
+        if (list != null && list.getLayoutParams() instanceof android.view.ViewGroup.MarginLayoutParams) {
+            android.view.ViewGroup.MarginLayoutParams params =
+                    (android.view.ViewGroup.MarginLayoutParams) list.getLayoutParams();
+            if (params.topMargin != 0) {
+                params.topMargin = 0;
+                list.setLayoutParams(params);
+            }
         }
     }
 
