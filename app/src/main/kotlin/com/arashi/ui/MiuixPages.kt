@@ -458,7 +458,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("允许 USB 文件传输", "允许挂载外部 USB 设备和使用数据传输。开关控制立即生效", HookConfig.KEY_ALLOW_USB),
             HookItem("允许任意应用设置壁纸", "系统本只允许 设置 和 桌面 设置壁纸，允许任意应用（例如壁纸引擎）设置壁纸", HookConfig.KEY_ALLOW_WALLPAPER),
             HookItem("允许 WiFi 网页登录", "允许连接到认证型 WiFi 跳转到登录验证网页", HookConfig.KEY_CAPTIVE_PORTAL),
-            HookItem("解除应用详情页限制", "允许打开 WebView、report服务 和 PadMs 的应用设置详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
+            HookItem("解除应用详情页限制", "允许打开 WebView、report服务 和 PadMs 的应用设置详情页。开关控制立即生效", HookConfig.KEY_CLEAR_DETAIL_BLACK),
             HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将 “学习网站” 设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
         ),
         "管控服务" to listOf(
