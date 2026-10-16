@@ -99,10 +99,9 @@ Log.w(TAG, "reject untrusted caller uid=" + Binder.getCallingUid());
             Bundle policy = new Bundle();
             policy.putBoolean(UninstallConfig.ENABLED,
                     uninstall.getBoolean(UninstallConfig.ENABLED, false));
-            policy.putBoolean(UninstallConfig.TIMEOUT_ENABLED,
-                    uninstall.getBoolean(UninstallConfig.TIMEOUT_ENABLED, true));
             policy.putInt(UninstallConfig.TIMEOUT_SECONDS,
-                    uninstall.getInt(UninstallConfig.TIMEOUT_SECONDS, UninstallConfig.DEFAULT_TIMEOUT));
+                    UninstallConfig.normalizeTimeoutSeconds(uninstall.getInt(
+                            UninstallConfig.TIMEOUT_SECONDS, UninstallConfig.DEFAULT_TIMEOUT)));
             policy.putStringArrayList(UninstallConfig.WHITELIST,
                     new java.util.ArrayList<>(uninstall.getStringSet(
                             UninstallConfig.WHITELIST, java.util.Collections.emptySet())));

@@ -36,7 +36,6 @@ public final class UninstallPromptActivity extends ComponentActivity {
                 getIntent().getStringExtra("target"),
                 getIntent().getIntExtra("caller_uid", -1),
                 getIntent().getStringArrayExtra("caller_packages"),
-                getIntent().getBooleanExtra("countdown", true),
                 getIntent().getLongExtra("deadline_elapsed", android.os.SystemClock.elapsedRealtime()));
     }
 

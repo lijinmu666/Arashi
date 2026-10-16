@@ -106,9 +106,8 @@ object MiuixPages {
         target: String?,
         uid: Int,
         packages: Array<String>?,
-        countdown: Boolean,
         deadline: Long,
-    ) = render(a) { UninstallPrompt(a, target, uid, packages, countdown, deadline) }
+    ) = render(a) { UninstallPrompt(a, target, uid, packages, deadline) }
     @JvmStatic fun renderQuickCommands(a: QuickCommands) = render(a) { QuickPage(a) }
     @JvmStatic fun renderZybosTools(a: ZybosTools) = render(a) { ZybosPage(a) }
     @JvmStatic fun renderZybosUninstallPicker(a: ZybosUninstallPickerActivity) =
@@ -711,10 +710,10 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
             a.lifecycle.removeObserver(observer)
         }
     }
-    var timeoutEnabled by remember { mutableStateOf(prefs.getBoolean(UninstallConfig.TIMEOUT_ENABLED, true)) }
     val durations = listOf(5, 10, 15, 30)
     var duration by remember {
-        mutableIntStateOf(durations.indexOf(prefs.getInt(UninstallConfig.TIMEOUT_SECONDS, 10)).coerceAtLeast(0))
+        mutableIntStateOf(durations.indexOf(UninstallConfig.normalizeTimeoutSeconds(
+            prefs.getInt(UninstallConfig.TIMEOUT_SECONDS, UninstallConfig.DEFAULT_TIMEOUT))))
     }
     IntroCard("细化并管理每一次卸载请求。当系统尝试卸载应用时，会向你询问是否允许")
     Group("验证") {
@@ -731,37 +730,17 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
                 else "未检测到 system_server Hook，卸载验证暂时关闭；激活后会恢复此前的开启状态",
             enabled = moduleActive,
         )
-        SwitchPreference(
-            checked = timeoutEnabled,
-            onCheckedChange = {
-                timeoutEnabled = it
-                prefs.edit().putBoolean(UninstallConfig.TIMEOUT_ENABLED, it).apply()
+        OverlayDropdownPreference(
+            items = durations.map { "$it 秒" },
+            selectedIndex = duration,
+            title = "验证倒计时",
+            onSelectedIndexChange = {
+                duration = it
+                prefs.edit().putInt(UninstallConfig.TIMEOUT_SECONDS, durations[it]).apply()
             },
-            title = "启用超时计时",
-            summary = "验证弹窗在设定秒数内未确认默认拒绝；关闭后仍有 30 秒系统安全上限，超时默认拒绝",
         )
-        AnimatedVisibility(
-            visible = timeoutEnabled,
-            enter = expandVertically(
-                animationSpec = tween(250, easing = FastOutSlowInEasing),
-                expandFrom = Alignment.Top,
-            ) + fadeIn(animationSpec = tween(200)),
-            exit = shrinkVertically(
-                animationSpec = tween(250, easing = FastOutSlowInEasing),
-                shrinkTowards = Alignment.Top,
-            ) + fadeOut(animationSpec = tween(150)),
-        ) {
-            OverlayDropdownPreference(
-                items = durations.map { it.toString() + " 秒" },
-                selectedIndex = duration,
-                title = "超时秒数",
-                onSelectedIndexChange = {
-                    duration = it
-                    prefs.edit().putInt(UninstallConfig.TIMEOUT_SECONDS, durations[it]).apply()
-                },
-            )
-        }
     }
+
     Group("发起方策略") {
         Link("白名单", "白名单中的发起方不会弹窗向你确认，直接允许") {
             a.startActivity(Intent(a, UninstallListActivity::class.java).putExtra("blacklist", false))
@@ -1134,7 +1113,6 @@ private fun UninstallPrompt(
     target: String?,
     uid: Int,
     packages: Array<String>?,
-    countdown: Boolean,
     deadline: Long,
 ) {
     val callerName = remember(uid, packages) {
@@ -1198,7 +1176,7 @@ private fun UninstallPrompt(
                     }
                 }
                 Text(
-                    if (countdown) "剩余 $remaining 秒" else "剩余 $remaining 秒（安全上限）",
+                    "剩余 $remaining 秒",
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

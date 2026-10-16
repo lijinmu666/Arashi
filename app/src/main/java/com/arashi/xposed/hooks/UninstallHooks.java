@@ -300,15 +300,11 @@ public final class UninstallHooks {
         } else if (matches(policy.getStringArrayList(UninstallConfig.WHITELIST), identities)) {
             decision = new Decision(true, "白名单");
         } else {
-            int seconds = policy.getInt(UninstallConfig.TIMEOUT_SECONDS,
-                    UninstallConfig.DEFAULT_TIMEOUT);
-            if (seconds != 5 && seconds != 10 && seconds != 15 && seconds != 30) {
-                seconds = UninstallConfig.DEFAULT_TIMEOUT;
-            }
-            boolean countdown = policy.getBoolean(UninstallConfig.TIMEOUT_ENABLED, true);
+            int seconds = UninstallConfig.normalizeTimeoutSeconds(policy.getInt(
+                    UninstallConfig.TIMEOUT_SECONDS, UninstallConfig.DEFAULT_TIMEOUT));
             decision = confirm(context, uid,
                     verifiedCaller == null ? new String[0] : new String[] { verifiedCaller },
-                    target, countdown, countdown ? seconds : 30);
+                    target, seconds);
         }
         recordDecision(context, uid, verifiedCaller, target, decision);
         return decision.allowed;
@@ -410,7 +406,7 @@ public final class UninstallHooks {
     }
 
     private static Decision confirm(Context context, int uid, String[] packages,
-            String target, boolean countdown, int seconds) {
+            String target, int seconds) {
         if (!PROMPT_SLOT.tryAcquire()) {
             Log.w(TAG, "Another uninstall confirmation is pending");
             return new Decision(false, "已有待确认请求");
@@ -429,8 +425,6 @@ public final class UninstallHooks {
         prompt.putExtra("target", target);
         prompt.putExtra("caller_uid", uid);
         prompt.putExtra("caller_packages", packages == null ? new String[0] : packages);
-        prompt.putExtra("countdown", countdown);
-        prompt.putExtra("timeout_seconds", seconds);
         prompt.putExtra("deadline_elapsed", SystemClock.elapsedRealtime() + seconds * 1000L);
         prompt.putExtra("decision_receiver", receiver);
         try {
