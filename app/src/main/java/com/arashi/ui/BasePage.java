@@ -6,13 +6,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.activity.ComponentActivity;
-import com.arashi.security.SignatureVerifier;
 
 public abstract class BasePage extends ComponentActivity {
-    // Activity lifecycle callbacks run on the main thread. Count pages so navigating
-    // within Arashi does not count as opening the app again.
-    private static int startedPages;
-    private static boolean restartingForConfiguration;
     protected LinearLayout content;
     private int shownThemeMode;
     private boolean shownDark;
@@ -41,24 +36,6 @@ public abstract class BasePage extends ComponentActivity {
                     | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
         } catch (RuntimeException ignored) {  }
         populate();
-    }
-
-    @Override protected void onStart() {
-        super.onStart();
-        boolean enteringForeground = startedPages == 0 && !restartingForConfiguration;
-        startedPages++;
-        restartingForConfiguration = false;
-        if (enteringForeground && SignatureVerifier.isMismatched(this)) {
-            MiuixPages.showSignatureWarning(this);
-        }
-    }
-
-    @Override protected void onStop() {
-        super.onStop();
-        startedPages--;
-        if (startedPages == 0) {
-            restartingForConfiguration = isChangingConfigurations();
-        }
     }
 
     @Override protected void onResume() {

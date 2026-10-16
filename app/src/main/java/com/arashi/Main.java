@@ -1,5 +1,6 @@
 package com.arashi;
 
+import com.arashi.security.SignatureVerifier;
 import com.arashi.ui.BasePage;
 import com.arashi.ui.MiuixPages;
 import com.arashi.ui.Ui;
@@ -16,6 +17,7 @@ import com.arashi.xposed.SettingsProvider;
 
 public final class Main extends BasePage {
     private TextView lsposedState;
+    private boolean verifySignatureOnLaunch;
 
     @Override protected void onResume() {
         super.onResume();
@@ -24,6 +26,8 @@ public final class Main extends BasePage {
 
     @Override public void onCreate(android.os.Bundle state) {
         super.onCreate(state);
+        // Verify new launches, not a restored page or a return from the background.
+        verifySignatureOnLaunch = state == null;
         new Thread(() -> {
             boolean supported = "ZYB".equals(readSystemBrand());
             runOnUiThread(() -> {
@@ -65,6 +69,12 @@ public final class Main extends BasePage {
 
     private void populateHome() {
         MiuixPages.renderHome(this);
+        if (verifySignatureOnLaunch) {
+            verifySignatureOnLaunch = false;
+            if (SignatureVerifier.isMismatched(this)) {
+                MiuixPages.showSignatureWarning(this);
+            }
+        }
     }
 
     private void updateModuleStatus() {
