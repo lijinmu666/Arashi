@@ -398,6 +398,7 @@ private fun HomePage(a: Main) = Page(a, "Arashi") {
         Link("快捷指令执行", "调整设置、冻结应用等快捷操作") { a.startActivity(Intent(a, QuickCommands::class.java)) }
         Link("系统特权工具", "利用 ZybosSysApiManager 执行系统操作") { a.startActivity(Intent(a, ZybosTools::class.java)) }
         Link("应用偏好设置", "配置外观等") { a.startActivity(Intent(a, ArashiSettings::class.java)) }
+        Link("关于 Arashi", "有关 Arashi 的更多详细信息页") { a.startActivity(Intent(a, About::class.java)) }
     }
 }
 
@@ -1556,7 +1557,6 @@ private fun SettingsPage(a: ArashiSettings) = Page(a, "应用偏好设置", a::f
             title = "启用 Arashi 安装器",
             summary = "启用后可在打开 APK 文件时选择 Arashi 作为安装器",
         )
-        Link("关于 Arashi", "有关 Arashi 的更多详细信息页") { a.startActivity(Intent(a, About::class.java)) }
     }
 }
 
