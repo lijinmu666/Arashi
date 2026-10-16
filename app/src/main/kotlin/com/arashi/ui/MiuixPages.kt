@@ -53,6 +53,7 @@ import com.arashi.xposed.HookConfig
 import com.arashi.xposed.HookScopes
 import com.arashi.xposed.SettingsProvider
 import com.arashi.uninstall.UninstallHistoryStore
+import com.arashi.zybos.SystemToolSupport
 import com.arashi.zybos.ZybosService
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -122,6 +123,9 @@ object MiuixPages {
         label: String,
         icon: Drawable,
     ) = render(a) { InstallerPage(a, path, packageName, label, icon) }
+    @JvmStatic fun renderSystemToolsUnavailable(a: ZybosTools) = render(a) {
+        Page(a, "系统特权工具", a::finish) { InfoCard(SystemToolSupport.MESSAGE) }
+    }
     @JvmStatic fun renderInstallerProgress(
         a: ApkInstallerActivity,
         label: String,
@@ -388,14 +392,24 @@ private fun HomePage(a: Main) = Page(a, "Arashi") {
         val moduleActive by rememberSystemServerActivation(a)
         StatusLine("LSPosed", if (moduleActive) "已激活" else "未激活", moduleActive)
         Spacer(Modifier.height(14.dp))
-        val zybosAvailable = ZybosService.detect(a)
+        val zybosAvailable = !SystemToolSupport.isBlocked() && ZybosService.detect(a)
         StatusLine("ZybosSysApiManager", if (zybosAvailable) "可用" else "不可用", zybosAvailable)
     }
     Group("功能") {
         Link("Hook 功能设置", "控制 Hook 是否启用") { a.startActivity(Intent(a, HookSettings::class.java)) }
         Link("卸载验证设置", "验证发起的卸载请求") { a.startActivity(Intent(a, UninstallSettings::class.java)) }
         Link("快捷指令执行", "调整设置、冻结应用等快捷操作") { a.startActivity(Intent(a, QuickCommands::class.java)) }
-        Link("系统特权工具", "利用 ZybosSysApiManager 执行系统操作") { a.startActivity(Intent(a, ZybosTools::class.java)) }
+        val toolsBlocked = SystemToolSupport.isBlocked()
+        Box(Modifier.fillMaxWidth().clickable(enabled = toolsBlocked) {
+            MiuixPages.showMessage(a, "暂不可用", SystemToolSupport.MESSAGE)
+        }) {
+            ArrowPreference(
+                title = "系统特权工具",
+                summary = "利用 ZybosSysApiManager 执行系统操作",
+                enabled = !toolsBlocked,
+                onClick = { a.startActivity(Intent(a, ZybosTools::class.java)) },
+            )
+        }
         Link("应用偏好设置", "配置外观等") { a.startActivity(Intent(a, ArashiSettings::class.java)) }
         Link("关于 Arashi", "有关 Arashi 的更多详细信息页") { a.startActivity(Intent(a, About::class.java)) }
     }
@@ -1534,8 +1548,13 @@ private fun SettingsPage(a: ArashiSettings) = Page(a, "应用偏好设置", a::f
             summary = if (moduleActive) "隐藏后仍可从 LSPosed 管理器打开" else "需先激活 LSPosed 才能隐藏桌面图标",
             enabled = moduleActive,
         )
+        val installerBlocked = SystemToolSupport.isBlocked()
+        Box(Modifier.fillMaxWidth().clickable(enabled = installerBlocked) {
+            MiuixPages.showMessage(a, "暂不可用", SystemToolSupport.MESSAGE)
+        }) {
         SwitchPreference(
-            checked = installer,
+            checked = installer && !installerBlocked,
+            enabled = !installerBlocked,
             onCheckedChange = { requested ->
                 try {
                     a.setInstallerEnabled(requested)
@@ -1547,6 +1566,7 @@ private fun SettingsPage(a: ArashiSettings) = Page(a, "应用偏好设置", a::f
             title = "启用 Arashi 安装器",
             summary = "启用后可在打开 APK 文件时选择 Arashi 作为安装器",
         )
+        }
     }
 }
 
