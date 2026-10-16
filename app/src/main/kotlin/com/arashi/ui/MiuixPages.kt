@@ -449,25 +449,25 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
     }
     val groups = listOf(
         "安装" to listOf(
-            HookItem("外部应用安装支持", "跳过 PackageInstaller 的安装检查，允许安装外部 APK", HookConfig.KEY_EXTERNAL_INSTALL),
-            HookItem("Shell 安装支持", "放行 ADB 和 pm install 安装，允许使用 Shell 安装应用", HookConfig.KEY_SHELL_INSTALL),
-            HookItem("清除安装黑名单", "允许安装被硬编码在系统中的5个包名。开关控制重启系统后生效", HookConfig.KEY_CLEAR_BLACKLIST),
+            HookItem("允许外部应用安装", "禁止 PackageInstaller 的安装检查，允许安装外部 APK", HookConfig.KEY_EXTERNAL_INSTALL),
+            HookItem("允许 Shell 安装", "放行 ADB 和 pm install 安装指令，允许 Shell 安装应用", HookConfig.KEY_SHELL_INSTALL),
+            HookItem("解除安装黑名单限制", "允许安装被硬编码在 mZybBlacklistApp 中的包名。开关控制重启系统后生效", HookConfig.KEY_CLEAR_BLACKLIST),
         ),
         "行为" to listOf(
-            HookItem("开发者选项支持", "放行开发者选项的开启状态检查，允许打开开发者选项的 Activity", HookConfig.KEY_DEV_OPTIONS),
+            HookItem("允许打开开发者选项", "绕过系统设置检查，允许打开开发者选项的 Activity", HookConfig.KEY_DEV_OPTIONS),
             HookItem("保留后台进程", "拦截划卡后强杀应用进程。开关控制立即生效", HookConfig.KEY_KEEP_BACKGROUND),
-            HookItem("USB 文件传输支持", "允许连接挂载外部 USB 设备", HookConfig.KEY_ALLOW_USB),
-            HookItem("壁纸设置支持", "允许任意应用修改系统壁纸", HookConfig.KEY_ALLOW_WALLPAPER),
-            HookItem("认证型 WiFi 登录支持", "允许认证型 WiFi 跳转网页", HookConfig.KEY_CAPTIVE_PORTAL),
+            HookItem("允许 USB 文件传输", "允许挂载外部 USB 设备和使用数据传输。开关控制立即生效", HookConfig.KEY_ALLOW_USB),
+            HookItem("允许任意应用设置壁纸", "系统本只允许 设置 和 桌面 设置壁纸，允许任意应用（例如壁纸引擎）设置壁纸", HookConfig.KEY_ALLOW_WALLPAPER),
+            HookItem("允许 WiFi 网页登录", "允许连接到认证型 WiFi 跳转到登录验证网页", HookConfig.KEY_CAPTIVE_PORTAL),
             HookItem("解除应用详情页限制", "允许打开 WebView、report服务 和 PadMs 的应用设置详情页", HookConfig.KEY_CLEAR_DETAIL_BLACK),
-            HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将“学习网站”设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
+            HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将 “学习网站” 设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
         ),
-        "管控" to listOf(
-            HookItem("拦截管控强停和任务清理", "从 SystemServer 层拦截管控服务的强杀应用和移除任务行为", HookConfig.KEY_BLOCK_SUPERVISE),
+        "管控服务" to listOf(
+            HookItem("拦截管控服务行为", "从 SystemServer 层拦截管控服务的强杀应用和移除任务行为", HookConfig.KEY_BLOCK_SUPERVISE),
             HookItem("阻止时长上报", "拦截管控服务的使用时长上传", HookConfig.KEY_BLOCK_USAGE_REPORT),
             HookItem("解除应用禁用", "将应用可用查询结果改为允许，绕过应用禁用和时长限制。已禁用的应用要先从其他应用打开一次才能从桌面启动", HookConfig.KEY_NEUTRALIZE_POLICY),
             HookItem("解除页面屏蔽", "将受限页面查询结果置空，允许打开被管控规则屏蔽的应用页面", HookConfig.KEY_NEUTRALIZE_ADVANCE),
-            HookItem("拦截超时锁屏", "拦截管控服务的超时处理，达到整机时长限制或超出可用时段后不锁屏", HookConfig.KEY_NO_TIMEOUT_LOCK),
+            HookItem("拦截超时锁屏", "阻止管控服务的超时处理，达到整机时长限制或超出可用时段后不锁屏", HookConfig.KEY_NO_TIMEOUT_LOCK),
         ),
     )
     groups.forEach { (name, entries) ->
