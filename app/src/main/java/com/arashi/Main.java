@@ -1,12 +1,10 @@
 package com.arashi;
 
-import com.arashi.security.SignatureVerifier;
 import com.arashi.ui.BasePage;
 import com.arashi.ui.MiuixPages;
 import com.arashi.ui.Ui;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
@@ -67,16 +65,6 @@ public final class Main extends BasePage {
 
     private void populateHome() {
         MiuixPages.renderHome(this);
-        showSignatureWarningIfNeeded();
-    }
-
-    private void showSignatureWarningIfNeeded() {
-        SharedPreferences prefs = getSharedPreferences("signature_warning", MODE_PRIVATE);
-        if (prefs.getBoolean("shown", false) || !SignatureVerifier.isMismatched(this)) {
-            return;
-        }
-        prefs.edit().putBoolean("shown", true).commit();
-        MiuixPages.showSignatureWarning(this);
     }
 
     private void updateModuleStatus() {
