@@ -780,45 +780,45 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
 private fun UninstallHistoryPage(a: UninstallHistoryActivity) {
     var records by remember { mutableStateOf<List<UninstallHistoryStore.Record>>(emptyList()) }
     var request by remember { mutableIntStateOf(0) }
-    var clearRequest by remember { mutableIntStateOf(0) }
     var confirmClear by remember { mutableStateOf(false) }
     var clearing by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var hasMore by remember { mutableStateOf(true) }
     var loadError by remember { mutableStateOf<String?>(null) }
     var clearError by remember { mutableStateOf<String?>(null) }
+    // A single effect serializes refresh, pagination and deletion. Changing the
+    // request cancels any old read before it can repopulate a cleared list.
     LaunchedEffect(request) {
-        loading = true
-        val before = records.lastOrNull()?.id ?: Long.MAX_VALUE
+        val deleting = clearing
+        loading = !deleting
         try {
-            val batch = withContext(Dispatchers.IO) {
-                UninstallHistoryStore.read(a, before, 101)
+            if (deleting) {
+                val count = withContext(Dispatchers.IO) { UninstallHistoryStore.clear(a) }
+                records = emptyList()
+                hasMore = false
+                loadError = null
+                clearError = null
+                MiuixPages.showMessage(a, "清空完成", "已清空 $count 条卸载记录")
+            } else {
+                val before = records.lastOrNull()?.id ?: Long.MAX_VALUE
+                val batch = withContext(Dispatchers.IO) {
+                    UninstallHistoryStore.read(a, before, 101)
+                }
+                records = records + batch.take(100)
+                hasMore = batch.size > 100
+                loadError = null
             }
-            records = records + batch.take(100)
-            hasMore = batch.size > 100
-            loadError = null
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
-            loadError = error.message ?: "读取记录失败"
+            if (deleting) {
+                clearError = error.message ?: "清空记录失败"
+                MiuixPages.showMessage(a, "清空失败", clearError.orEmpty())
+            } else {
+                loadError = error.message ?: "读取记录失败"
+            }
         }
         loading = false
-    }
-    LaunchedEffect(clearRequest) {
-        if (clearRequest == 0) return@LaunchedEffect
-        clearing = true
-        try {
-            withContext(Dispatchers.IO) { UninstallHistoryStore.clear(a) }
-            records = emptyList()
-            hasMore = true
-            loadError = null
-            clearError = null
-            request++
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            clearError = error.message ?: "清空记录失败"
-        }
         clearing = false
     }
     Scaffold(
@@ -905,13 +905,14 @@ private fun UninstallHistoryPage(a: UninstallHistoryActivity) {
             if (clearError != null) {
                 item { InfoCard("清空失败：" + clearError) }
             }
-            if (hasMore && !loading && loadError == null) {
+            if (hasMore && !loading && !clearing && loadError == null) {
                 item {
                     TextButton("加载更多", { request++ }, Modifier.fillMaxWidth())
                 }
             }
         }
     }
+    MiuixPages.MessageDialog(a)
     OverlayDialog(
         show = confirmClear,
         title = "清空卸载记录",
@@ -924,7 +925,10 @@ private fun UninstallHistoryPage(a: UninstallHistoryActivity) {
                 "清空",
                 {
                     confirmClear = false
-                    clearRequest++
+                    if (!clearing) {
+                        clearing = true
+                        request++
+                    }
                 },
                 Modifier.weight(1f),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
