@@ -467,7 +467,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("阻止时长上报", "拦截管控服务的使用时长上传", HookConfig.KEY_BLOCK_USAGE_REPORT),
             HookItem("解除应用禁用", "将应用可用查询结果改为允许，绕过应用禁用和时长限制。已禁用的应用要先从其他应用打开一次才能从桌面启动", HookConfig.KEY_NEUTRALIZE_POLICY),
             HookItem("解除页面屏蔽", "将受限页面查询结果置空，允许打开被管控规则屏蔽的应用页面", HookConfig.KEY_NEUTRALIZE_ADVANCE),
-            HookItem("拦截超时锁屏", "阻止管控服务的超时处理，达到整机时长限制或超出可用时段后不锁屏", HookConfig.KEY_NO_TIMEOUT_LOCK),
+            HookItem("阻止超时锁屏", "拦截管控服务的超时处理，达到整机时长限制或超出可用时段后不锁屏", HookConfig.KEY_NO_TIMEOUT_LOCK),
         ),
     )
     groups.forEach { (name, entries) ->
@@ -1491,7 +1491,7 @@ private fun SettingsPage(a: ArashiSettings) = Page(a, "应用偏好设置", a::f
     }
     Group("外观") {
         OverlayDropdownPreference(
-            items = listOf("Arashi 紫色", "Miuix 默认蓝色"),
+            items = listOf("紫色", "蓝色"),
             selectedIndex = selectedColorScheme,
             title = "配色设置",
             onSelectedIndexChange = { index ->
