@@ -240,14 +240,23 @@ object MiuixPages {
     @Composable
     fun MessageDialog(a: Activity) {
         val message = messageState(a)
+        val current = message.value
+        // Visibility can change immediately, but the overlay still draws its
+        // content during the exit animation. Retain the last displayed message
+        // until replacement or composition disposal rather than blanking it.
+        var retained by remember(a) { mutableStateOf(current) }
+        SideEffect {
+            if (current != null) retained = current
+        }
+        val displayed = current ?: retained
         OverlayDialog(
-            show = message.value != null,
-            title = message.value?.title,
-            summary = message.value?.body,
+            show = current != null,
+            title = displayed?.title,
+            summary = displayed?.body,
             onDismissRequest = { message.value = null },
         ) {
             TextButton(
-                message.value?.buttonLabel ?: "知道了",
+                displayed?.buttonLabel ?: "知道了",
                 { message.value = null },
                 Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
