@@ -54,7 +54,6 @@ import com.arashi.xposed.HookScopes
 import com.arashi.xposed.SettingsProvider
 import com.arashi.uninstall.UninstallHistoryStore
 import com.arashi.zybos.SystemToolSupport
-import com.arashi.zybos.ZybosService
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -391,9 +390,6 @@ private fun HomePage(a: Main) = Page(a, "Arashi") {
         Spacer(Modifier.height(18.dp))
         val moduleActive by rememberSystemServerActivation(a)
         StatusLine("LSPosed", if (moduleActive) "已激活" else "未激活", moduleActive)
-        Spacer(Modifier.height(14.dp))
-        val zybosAvailable = !SystemToolSupport.isBlocked() && ZybosService.detect(a)
-        StatusLine("ZybosSysApiManager", if (zybosAvailable) "可用" else "不可用", zybosAvailable)
     }
     Group("功能") {
         Link("Hook 功能设置", "控制 Hook 是否启用") { a.startActivity(Intent(a, HookSettings::class.java)) }
@@ -420,11 +416,11 @@ private fun UnsupportedDevicePage(a: Main) = Page(a, "Arashi") {
     OverlayDialog(
         show = true,
         summary = "当前系统可能无法正常使用 Arashi 功能",
-        onDismissRequest = a::continueAfterCompatibilityWarning,
+        onDismissRequest = a::exitUnsupportedDevice,
     ) {
         TextButton(
-            "哦",
-            a::continueAfterCompatibilityWarning,
+            "确认",
+            a::exitUnsupportedDevice,
             Modifier.fillMaxWidth(),
             colors = ButtonDefaults.textButtonColorsPrimary(),
         )
