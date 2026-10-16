@@ -10,6 +10,7 @@ import io.github.libxposed.api.XposedModule;
 import com.arashi.xposed.ConfigManager;
 import com.arashi.xposed.HookConfig;
 import com.arashi.xposed.Reflect;
+import com.arashi.xposed.SettingsHeaderCompat;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
@@ -98,6 +99,20 @@ public final class DevOptionsHooks {
                 Log.w(TAG, "getZybSettingsHeaders not found");
                 return;
             }
+            // OTA 7.10 checks a fixed built-in list when routing an existing Activity's intent.
+            // Treat the injected dashboard as a top-level page, not a nested destination.
+            Method isTopFragment = Reflect.findMethodExact(headListClass,
+                    "isZybSettingsTopFragment", String.class);
+            if (isTopFragment != null) {
+                mod.hook(isTopFragment).intercept(chain -> {
+                    if (DEV_FRAGMENT.equals(chain.getArg(0))
+                            && ConfigManager.isEnabled(HookConfig.KEY_DEV_OPTIONS)
+                            && ConfigManager.isEnabled(HookConfig.KEY_DEV_OPTIONS_MENU)) {
+                        return true;
+                    }
+                    return chain.proceed();
+                });
+            }
             mod.hook(method).intercept(chain -> {
                 Object original = chain.proceed();
                 if (!(original instanceof List)
@@ -105,43 +120,39 @@ public final class DevOptionsHooks {
                         || !ConfigManager.isEnabled(HookConfig.KEY_DEV_OPTIONS_MENU)) {
                     return original;
                 }
-                List<?> headers = (List<?>) original;
-                for (Object header : headers) {
-                    Object fragment = Reflect.callMethod(header, "getFragmentName");
-                    if (DEV_FRAGMENT.equals(fragment)) return original;
-                }
+                try {
+                    List<?> headers = (List<?>) original;
+                    for (Object header : headers) {
+                        Object fragment = Reflect.callMethod(header, "getFragmentName");
+                        if (DEV_FRAGMENT.equals(fragment)) return original;
+                    }
 
-                Context context = (Context) chain.getArg(0);
-                int title = context.getResources().getIdentifier(
-                        "development_settings_title", "string", "com.android.settings");
-                int icon = context.getResources().getIdentifier(
-                        "ic_settings_development", "drawable", "com.android.settings");
-                if (title == 0 || icon == 0) {
-                    Log.w(TAG, "developer menu title or icon resource missing");
+                    Context context = (Context) chain.getArg(0);
+                    int title = context.getResources().getIdentifier(
+                            "development_settings_title", "string", "com.android.settings");
+                    int icon = context.getResources().getIdentifier(
+                            "ic_settings_development", "drawable", "com.android.settings");
+                    if (title == 0 || icon == 0) {
+                        Log.w(TAG, "developer menu title or icon resource missing");
+                        return original;
+                    }
+
+                    Class<?> headerClass = Class.forName("com.android.settings.zyb.ui.ZybSettingsHeader", false, cl);
+                    Object injected = SettingsHeaderCompat.create(
+                            headerClass, headers, title, icon, DEV_FRAGMENT);
+                    List<Object> result = new ArrayList<>(headers);
+                    result.add(injected);
+                    Log.i(TAG, "developer options side menu entry injected");
+                    return result;
+                } catch (Exception error) {
+                    Log.w(TAG, "developer menu injection failed; keeping Settings headers", error);
                     return original;
                 }
-
-                Class<?> headerClass = Class.forName("com.android.settings.zyb.ui.ZybSettingsHeader", false, cl);
-                Object injected = headerClass.getDeclaredConstructor().newInstance();
-                setHeaderValue(headerClass, injected, "setTitleResId", int.class, title);
-                setHeaderValue(headerClass, injected, "setImgResId", int.class, icon);
-                setHeaderValue(headerClass, injected, "setFragmentName", String.class, DEV_FRAGMENT);
-                setHeaderValue(headerClass, injected, "setVisible", boolean.class, true);
-                List<Object> result = new ArrayList<>(headers);
-                result.add(injected);
-                Log.i(TAG, "developer options side menu entry injected");
-                return result;
             });
             Log.i(TAG, "settings side menu hook registered");
         } catch (Throwable error) {
             Log.w(TAG, "settings side menu hook failed: " + error);
         }
-    }
-
-    private static void setHeaderValue(Class<?> owner, Object instance, String name,
-                                       Class<?> parameter, Object value) throws Exception {
-        Method setter = owner.getMethod(name, parameter);
-        setter.invoke(instance, value);
     }
 
     /** ZybSettings is a two-pane host, while the stock dashboard assumes SettingsActivity. */
