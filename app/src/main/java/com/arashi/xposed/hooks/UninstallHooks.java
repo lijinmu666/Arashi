@@ -38,7 +38,6 @@ public final class UninstallHooks {
     private static final String DENIED_MESSAGE = "WoShiJiangJieShi";
     private static final Semaphore PROMPT_SLOT = new Semaphore(1);
     private static final ThreadLocal<Boolean> INSTALLER_CALL = new ThreadLocal<>();
-    private static volatile Bundle lastPolicy;
     private static final Map<Object, String> APPROVED_OBSERVERS =
             Collections.synchronizedMap(new WeakHashMap<>());
 
@@ -253,19 +252,19 @@ public final class UninstallHooks {
     private static Decision evaluateRequest(Context context, int uid, String target, String callerPackage) {
         int callerPid = Binder.getCallingPid();
         Bundle policy;
+        // Query as system_server, not as the application requesting deletion.
+        // Keep uid/pid above intact for the actual uninstall policy evaluation.
+        long policyIdentity = Binder.clearCallingIdentity();
         try {
             policy = context.getContentResolver().call(SettingsProvider.URI,
                     SettingsProvider.METHOD_GET_UNINSTALL, "system_server", null);
-            if (policy != null) {
-                lastPolicy = policy;
-            }
         } catch (Throwable error) {
             Log.w(TAG, "Policy unavailable", error);
             policy = null;
+        } finally {
+            Binder.restoreCallingIdentity(policyIdentity);
         }
-        if (policy == null) {
-            policy = lastPolicy;
-        }
+        // Never resurrect an old enabled policy after the user disables validation.
         if (policy == null) {
             return new Decision(true, "策略不可用");
         }
