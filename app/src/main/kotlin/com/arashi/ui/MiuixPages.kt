@@ -1219,6 +1219,8 @@ private fun QuickPage(a: QuickCommands) = Page(a, "快捷指令执行", a::finis
     Group("应用相关") {
         Link("禁用 PadMs", "冻结 com.zuoyebang.padms") { a.run("禁用 PadMs", "pm disable com.zuoyebang.padms") }
         Link("禁用 report服务", "冻结 com.zuoyebang.iot.pad.zpreport") { a.run("禁用 report服务", "pm disable com.zuoyebang.iot.pad.zpreport") }
+        Link("禁用 系统升级", "冻结 com.zuoyebang.iot.zp.lib.ota.server") { a.run("禁用 系统升级", "pm disable com.zuoyebang.iot.zp.lib.ota.server") }
+        Link("启用 系统升级", "与上方功能作用排斥") { a.run("启用 系统升级", "pm enable com.zuoyebang.iot.zp.lib.ota.server") }
     }
     Group("设置相关") {
         fun set(title: String, key: String, value: Int) =
