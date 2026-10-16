@@ -710,6 +710,7 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
             a.lifecycle.removeObserver(observer)
         }
     }
+    var spoofResult by remember { mutableStateOf(prefs.getBoolean(UninstallConfig.SPOOF_RESULT, false)) }
     val durations = listOf(5, 10, 15, 30)
     var duration by remember {
         mutableIntStateOf(durations.indexOf(UninstallConfig.normalizeTimeoutSeconds(
@@ -738,6 +739,15 @@ private fun UninstallPage(a: UninstallSettings) = Page(a, "卸载验证", a::fin
                 duration = it
                 prefs.edit().putInt(UninstallConfig.TIMEOUT_SECONDS, durations[it]).apply()
             },
+        )
+        SwitchPreference(
+            checked = spoofResult,
+            onCheckedChange = {
+                spoofResult = it
+                prefs.edit().putBoolean(UninstallConfig.SPOOF_RESULT, it).apply()
+            },
+            title = "伪装卸载结果",
+            summary = "返回拒绝的卸载请求已成功卸载",
         )
     }
 
