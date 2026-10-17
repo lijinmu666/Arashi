@@ -1244,8 +1244,6 @@ private fun QuickPage(a: QuickCommands) = Page(a, "快捷指令执行", a::finis
         Link("关闭开发者模式", "关闭 development_settings_enabled") { set("关闭开发者模式", "development_settings_enabled", 0) }
         Link("打开 USB调试", "打开 adb_enabled") { set("打开 USB调试", "adb_enabled", 1) }
         Link("关闭 USB调试", "关闭 adb_enabled") { set("关闭 USB调试", "adb_enabled", 0) }
-        Link("打开 special_enable_adb_debug", "打开 AIBangOS 的售后后门设置") { set("打开 special_enable_adb_debug", "special_enable_adb_debug", 1) }
-        Link("关闭 special_enable_adb_debug", "与上方设置排斥") { set("关闭 special_enable_adb_debug", "special_enable_adb_debug", 0) }
     }
     Group("投屏") {
         Link("开启投屏", "启用 SystemUI 的无线显示并添加投屏磁贴") {
