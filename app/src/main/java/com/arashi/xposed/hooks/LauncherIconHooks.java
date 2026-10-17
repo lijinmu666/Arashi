@@ -1,5 +1,6 @@
 package com.arashi.xposed.hooks;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -20,6 +21,16 @@ import java.lang.reflect.Method;
 
 public final class LauncherIconHooks {
     private static final java.util.Map<Drawable, IosIconDrawable> DISPLAY_ICONS = new java.util.WeakHashMap<>();
+    private static final java.util.Map<Drawable, Source> SOURCES = new java.util.WeakHashMap<>();
+    private static final class Source {
+        final Context context;
+        final ComponentName component;
+        Source(Context context, ComponentName component) {
+            Context app = context.getApplicationContext();
+            this.context = app == null ? context : app;
+            this.component = component;
+        }
+    }
     private static final java.util.Map<Object, Float> CARD_RADII = new java.util.WeakHashMap<>();
     private static final ThreadLocal<Boolean> STYLING = new ThreadLocal<>();
     private static final String DOCK = "com.zuoyebang.iot.pad.launcher.mysubject.presentation.view.dock.DockView";
@@ -68,9 +79,10 @@ public final class LauncherIconHooks {
                 return chain.proceed();
             });
         } catch (Throwable error) { Log.w("[Arashi-Icons]", "Image refresh hook unavailable", error); }
-        try {
+        // Themed folder previews override the base renderer.
+        for (String renderer : new String[] { "g8.v", "g8.p0" }) try {
             // Style only the displayed drawable, never the persistent icon cache.
-            Class<?> fastIcon = Class.forName("g8.v", false, loader);
+            Class<?> fastIcon = Class.forName(renderer, false, loader);
             Method draw = Reflect.findMethodExact(fastIcon, "a", Canvas.class, Rect.class);
             if (draw != null) module.hook(draw).intercept(chain -> {
                 if (!ConfigManager.isEnabled(HookConfig.KEY_IOS_ICONS)) return chain.proceed();
@@ -83,8 +95,8 @@ public final class LauncherIconHooks {
                     synchronized (DISPLAY_ICONS) {
                         styled = DISPLAY_ICONS.get(target);
                         if (styled == null) {
-                            Drawable source = null;
-                            if (identity != null && callback instanceof View) {
+                            Drawable source = sourceFor(target);
+                            if (source == null && identity != null && callback instanceof View) {
                                 try {
                                     source = ((View) callback).getContext().getPackageManager().getApplicationIcon(identity);
                                 } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {}
@@ -110,11 +122,43 @@ public final class LauncherIconHooks {
                     return chain.proceed();
                 }
             });
-        } catch (Throwable error) { Log.w("[Arashi-Icons]", "Launcher icon renderer unavailable", error); }
+        } catch (Throwable error) { Log.w("[Arashi-Icons]", "Launcher icon renderer unavailable: " + renderer, error); }
+        LauncherIconDetailsHooks.hookLauncher(module, loader);
         Log.i("[Arashi-Icons]", "Launcher icon hooks registered");
     }
 
+    static void registerSource(Drawable icon, Context context, Object item) throws IllegalAccessException {
+        if (icon == null || context == null) return;
+        ComponentName component = componentFromTag(item);
+        registerComponent(icon, context, component);
+    }
+
+    static void registerComponent(Drawable icon, Context context, ComponentName component) {
+        if (icon == null || context == null) return;
+        synchronized (SOURCES) {
+            Source previous = SOURCES.get(icon);
+            if (previous != null && previous.component.equals(component)
+                    && previous.context == context.getApplicationContext()) return;
+            if (component == null) SOURCES.remove(icon);
+            else SOURCES.put(icon, new Source(context, component));
+        }
+        synchronized (DISPLAY_ICONS) { DISPLAY_ICONS.remove(icon); }
+    }
+
+    private static Drawable sourceFor(Drawable icon) {
+        Source source;
+        synchronized (SOURCES) { source = SOURCES.get(icon); }
+        if (source == null) return null;
+        try { return source.context.getPackageManager().getActivityIcon(source.component); }
+        catch (android.content.pm.PackageManager.NameNotFoundException ignored) { return null; }
+    }
+
     private static String identityFromTag(Object tag) throws IllegalAccessException {
+        ComponentName component = componentFromTag(tag);
+        return component == null ? null : component.getPackageName();
+    }
+
+    static ComponentName componentFromTag(Object tag) throws IllegalAccessException {
         if (tag == null) return null;
         for (Class<?> type = tag.getClass(); type != null; type = type.getSuperclass()) {
             for (Field field : type.getDeclaredFields()) {
@@ -124,7 +168,7 @@ public final class LauncherIconHooks {
                 Object value = field.get(tag);
                 ComponentName component = value instanceof Intent ? ((Intent) value).getComponent()
                         : value instanceof ComponentName ? (ComponentName) value : null;
-                if (component != null) return component.getPackageName();
+                if (component != null) return component;
             }
         }
         return null;
@@ -168,7 +212,7 @@ public final class LauncherIconHooks {
         }
     }
 
-    private static Object field(Object target, String name) throws Exception {
+    static Object field(Object target, String name) throws Exception {
         for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
             try {
                 Field field = type.getDeclaredField(name);
