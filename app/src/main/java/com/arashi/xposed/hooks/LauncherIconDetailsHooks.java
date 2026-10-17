@@ -18,9 +18,10 @@ import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-/** Launcher 14 folder miniatures and recent-task header icons. */
+/** Version-specific folder miniatures and recent-task header icons. */
 final class LauncherIconDetailsHooks {
     private static final String TAG = "[Arashi-Icons]";
+    private static final Map<View, Float> RECENT_RADII = new WeakHashMap<>();
     private static final Map<View, RecentIcon> RECENT_ICONS = new WeakHashMap<>();
     private static final class RecentIcon {
         final WeakReference<Drawable> original;
@@ -35,10 +36,14 @@ final class LauncherIconDetailsHooks {
     private LauncherIconDetailsHooks() {}
 
     static void hookLauncher(XposedModule module, ClassLoader loader) {
+        hookLauncher(module, loader, false);
+    }
+
+    static void hookLauncher(XposedModule module, ClassLoader loader, boolean launcher3) {
         try {
-            Class<?> previews = Class.forName("com.android.launcher3.folder.d0", false, loader);
-            Class<?> params = Class.forName("com.android.launcher3.folder.c0", false, loader);
-            Class<?> item = Class.forName("n8.l", false, loader);
+            Class<?> previews = Class.forName(launcher3 ? "com.android.launcher3.folder.e0" : "com.android.launcher3.folder.d0", false, loader);
+            Class<?> params = Class.forName(launcher3 ? "com.android.launcher3.folder.d0" : "com.android.launcher3.folder.c0", false, loader);
+            Class<?> item = Class.forName(launcher3 ? "k8.j" : "n8.l", false, loader);
             Method bind = Reflect.findMethodExact(previews, "h", params, item);
             if (bind != null) module.hook(bind).intercept(chain -> {
                 Object result = chain.proceed();
@@ -53,21 +58,33 @@ final class LauncherIconDetailsHooks {
         } catch (Throwable error) { Log.w(TAG, "Folder miniature hook unavailable", error); }
         try {
             Class<?> iconView = Class.forName("com.android.quickstep.views.IconView", false, loader);
+            if (launcher3) {
+                Method bindIcon = Reflect.findMethodExact(iconView, "setDrawable", Drawable.class);
+                if (bindIcon != null) module.hook(bindIcon).intercept(chain -> {
+                    Object result = chain.proceed();
+                    updateRecentRadius((View) chain.getThisObject());
+                    return result;
+                });
+            }
             Method draw = Reflect.findMethodExact(iconView, "onDraw", Canvas.class);
             if (draw != null) module.hook(draw).intercept(chain -> {
-                if (!ConfigManager.isEnabled(HookConfig.KEY_IOS_ICONS)) return chain.proceed();
                 View view = (View) chain.getThisObject();
+                if (launcher3) updateRecentRadius(view);
+                if (!ConfigManager.isEnabled(HookConfig.KEY_IOS_ICONS)) return chain.proceed();
                 Drawable original = (Drawable) Reflect.callMethod(view, "getDrawable");
                 if (original == null) return chain.proceed();
-                Rect bounds = new Rect(original.getBounds());
+                // Launcher3 expands cached icons by 20% and crops them in CardView.
+                // Draw the raw artwork in the visible area instead.
+                Rect bounds = launcher3 ? new Rect(0, 0, view.getWidth(), view.getHeight())
+                        : new Rect(original.getBounds());
                 if (bounds.isEmpty()) return chain.proceed();
                 Canvas canvas = (Canvas) chain.getArg(0);
                 boolean nativeRenderer = false;
                 try {
-                    ComponentName component = taskComponent(view);
+                    ComponentName component = taskComponent(view, launcher3);
                     if (component != null) {
                         String type = original.getClass().getName();
-                        if (type.equals("g8.v") || type.equals("g8.p0")) {
+                        if (!launcher3 && (type.equals("g8.v") || type.equals("g8.p0"))) {
                             // Keep the drawable's own badges, tint and disabled-state
                             // effects; the base/themed renderer applies the new mask.
                             LauncherIconHooks.registerComponent(original, view.getContext(), component);
@@ -99,9 +116,23 @@ final class LauncherIconDetailsHooks {
         } catch (Throwable error) { Log.w(TAG, "Recent-task icon hook unavailable", error); }
     }
 
-    private static ComponentName taskComponent(View iconView) throws Exception {
+    private static void updateRecentRadius(View view) {
+        try {
+            if (ConfigManager.isEnabled(HookConfig.KEY_IOS_ICONS)) {
+                float radius = ((Number) Reflect.callMethod(view, "getRadius")).floatValue();
+                if (radius != 0f || !RECENT_RADII.containsKey(view)) RECENT_RADII.put(view, radius);
+                if (radius != 0f) Reflect.callMethod(view, "setRadius", 0f);
+            } else {
+                Float radius = RECENT_RADII.remove(view);
+                if (radius != null) Reflect.callMethod(view, "setRadius", radius);
+            }
+        } catch (Exception error) { Log.w(TAG, "Unable to update recent-task corner clipping", error); }
+    }
+
+    private static ComponentName taskComponent(View iconView, boolean launcher3) throws Exception {
         for (ViewParent parent = iconView.getParent(); parent instanceof View; parent = parent.getParent()) {
             if (!isTaskView(parent.getClass())) continue;
+            if (launcher3) return componentOf(Reflect.callMethod(parent, "getTask"));
             Object containers = Reflect.callMethod(parent, "getTaskIdAttributeContainers");
             if (containers instanceof Object[]) {
                 for (Object container : (Object[]) containers) {

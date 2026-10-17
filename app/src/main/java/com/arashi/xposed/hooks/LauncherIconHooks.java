@@ -38,6 +38,10 @@ public final class LauncherIconHooks {
     private LauncherIconHooks() {}
 
     public static void hookLauncher(XposedModule module, ClassLoader loader) {
+        hookLauncher(module, loader, false);
+    }
+
+    public static void hookLauncher(XposedModule module, ClassLoader loader, boolean launcher3) {
         for (String name : new String[]{"setImageDrawable", "setImageBitmap", "setImageResource"}) {
             try {
                 Class<?> arg = name.equals("setImageDrawable") ? Drawable.class
@@ -79,8 +83,9 @@ public final class LauncherIconHooks {
                 return chain.proceed();
             });
         } catch (Throwable error) { Log.w("[Arashi-Icons]", "Image refresh hook unavailable", error); }
-        // Themed folder previews override the base renderer.
-        for (String renderer : new String[] { "g8.v", "g8.p0" }) try {
+        // Launcher14 themed previews override the base renderer. Launcher3 uses
+        // d8.q; its d8.d0 subclass is a loading placeholder, not a themed icon.
+        for (String renderer : (launcher3 ? new String[] { "d8.q" } : new String[] { "g8.v", "g8.p0" })) try {
             // Style only the displayed drawable, never the persistent icon cache.
             Class<?> fastIcon = Class.forName(renderer, false, loader);
             Method draw = Reflect.findMethodExact(fastIcon, "a", Canvas.class, Rect.class);
@@ -123,7 +128,7 @@ public final class LauncherIconHooks {
                 }
             });
         } catch (Throwable error) { Log.w("[Arashi-Icons]", "Launcher icon renderer unavailable: " + renderer, error); }
-        LauncherIconDetailsHooks.hookLauncher(module, loader);
+        LauncherIconDetailsHooks.hookLauncher(module, loader, launcher3);
         Log.i("[Arashi-Icons]", "Launcher icon hooks registered");
     }
 
