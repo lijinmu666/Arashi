@@ -30,8 +30,7 @@ public static final String KEY_BLOCK_SUPERVISE = "hook_block_supervise";
     public static final String KEY_KEEP_BACKGROUND_WHITELIST = "hook_keep_background_whitelist";
 
     public static boolean defaultEnabled(String key) {
-        return !KEY_RECORD_INTERNAL_AUDIO.equals(key)
-                && !KEY_STATUS_BAR_DATE.equals(key)
+        return !KEY_STATUS_BAR_DATE.equals(key)
                 && !KEY_IOS_ICONS.equals(key)
                 && !KEY_ANDROID12_BLACKLIST_HOOK.equals(key)
                 && !KEY_DEV_OPTIONS_MENU.equals(key)
