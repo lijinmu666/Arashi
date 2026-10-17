@@ -21,7 +21,15 @@ import java.util.WeakHashMap;
 /** Version-specific folder miniatures and recent-task header icons. */
 final class LauncherIconDetailsHooks {
     private static final String TAG = "[Arashi-Icons]";
-    private static final Map<View, Float> RECENT_RADII = new WeakHashMap<>();
+    private static final Map<View, RecentCard> RECENT_CARDS = new WeakHashMap<>();
+    private static final class RecentCard {
+        final float radius;
+        final android.content.res.ColorStateList color;
+        RecentCard(float radius, android.content.res.ColorStateList color) {
+            this.radius = radius;
+            this.color = color;
+        }
+    }
     private static final Map<View, RecentIcon> RECENT_ICONS = new WeakHashMap<>();
     private static final class RecentIcon {
         final WeakReference<Drawable> original;
@@ -120,11 +128,23 @@ final class LauncherIconDetailsHooks {
         try {
             if (ConfigManager.isEnabled(HookConfig.KEY_IOS_ICONS)) {
                 float radius = ((Number) Reflect.callMethod(view, "getRadius")).floatValue();
-                if (radius != 0f || !RECENT_RADII.containsKey(view)) RECENT_RADII.put(view, radius);
+                android.content.res.ColorStateList color = (android.content.res.ColorStateList)
+                        Reflect.callMethod(view, "getCardBackgroundColor");
+                RecentCard previous = RECENT_CARDS.get(view);
+                if (previous == null || radius != 0f) {
+                    RECENT_CARDS.put(view, new RecentCard(radius,
+                            previous == null ? color : previous.color));
+                }
                 if (radius != 0f) Reflect.callMethod(view, "setRadius", 0f);
+                // CardView's default fill must not show a square behind the icon.
+                if (color.getDefaultColor() != 0) view.getClass().getMethod("setCardBackgroundColor", int.class).invoke(view, 0);
             } else {
-                Float radius = RECENT_RADII.remove(view);
-                if (radius != null) Reflect.callMethod(view, "setRadius", radius);
+                RecentCard original = RECENT_CARDS.remove(view);
+                if (original != null) {
+                    Reflect.callMethod(view, "setRadius", original.radius);
+                    view.getClass().getMethod("setCardBackgroundColor",
+                            android.content.res.ColorStateList.class).invoke(view, original.color);
+                }
             }
         } catch (Exception error) { Log.w(TAG, "Unable to update recent-task corner clipping", error); }
     }
