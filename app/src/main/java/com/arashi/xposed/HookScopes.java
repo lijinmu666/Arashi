@@ -127,6 +127,9 @@ public final class HookScopes {
                 || HookConfig.KEY_BLOCK_USAGE_REPORT.equals(key)) {
             return new String[] { "com.zuoyebang.iot.pad.supervise" };
         }
+        if (HookConfig.KEY_ALLOW_WALLPAPER.equals(key)) {
+            return new String[] { "com.zuoyebang.iot.pad.launcher14" };
+        }
         if (HookConfig.KEY_BLOCK_DEFAULT_BROWSER.equals(key)) {
             return new String[] { "com.android.systemui" };
         }
