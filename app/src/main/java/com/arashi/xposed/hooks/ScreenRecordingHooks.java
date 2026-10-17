@@ -1,5 +1,6 @@
 package com.arashi.xposed.hooks;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -80,10 +81,15 @@ public final class ScreenRecordingHooks {
             module.hook(create).intercept(chain -> {
                 Object result = chain.proceed();
                 if (!ConfigManager.isEnabled(HookConfig.KEY_RECORD_INTERNAL_AUDIO)) return result;
-                Dialog target = (Dialog) chain.getThisObject();
-                Context context = target.getContext();
+                Object target = chain.getThisObject();
+                // Android 12 uses an Activity; Android 14 uses a SystemUIDialog.
+                Context context;
+                if (target instanceof Activity) context = (Activity) target;
+                else if (target instanceof Dialog) context = ((Dialog) target).getContext();
+                else return result;
                 int id = context.getResources().getIdentifier("record_spinner_background", "id", context.getPackageName());
-                View row = id == 0 ? null : target.findViewById(id);
+                View row = id == 0 ? null : target instanceof Activity
+                        ? ((Activity) target).findViewById(id) : ((Dialog) target).findViewById(id);
                 Object options = Reflect.getObjectField(target, "mOptions");
                 if (row != null && options instanceof Spinner) {
                     Spinner spinner = (Spinner) options;
