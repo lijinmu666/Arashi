@@ -476,19 +476,19 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("保留后台进程", "拦截划卡后强杀应用进程。开关控制立即生效", HookConfig.KEY_KEEP_BACKGROUND),
             HookItem("允许 USB 文件传输", "允许挂载外部 USB 设备和使用数据传输。开关控制立即生效", HookConfig.KEY_ALLOW_USB),
             HookItem("允许任意应用设置壁纸", "允许任意应用设置壁纸，并移除新版桌面覆盖系统壁纸的静态背景。需勾选系统框架与作业帮桌面作用域，开关控制立即生效", HookConfig.KEY_ALLOW_WALLPAPER),
-            HookItem("允许 WiFi 网页登录", "允许连接到认证型 WiFi 跳转到登录验证网页", HookConfig.KEY_CAPTIVE_PORTAL),
+            HookItem("允许 WiFi 网页登录", "允许连接到认证型 WiFi 正常跳转到 “登录到网络” 登录验证网页", HookConfig.KEY_CAPTIVE_PORTAL),
             HookItem("解除应用详情页限制", "允许打开 WebView、report服务 和 PadMs 的应用设置详情页。开关控制立即生效", HookConfig.KEY_CLEAR_DETAIL_BLACK),
-            HookItem("录屏内部音频支持", "恢复设备声音、麦克风及混合音源选择，选择设备声音时不录制麦克风。重新打开录屏面板后生效", HookConfig.KEY_RECORD_INTERNAL_AUDIO),
+            HookItem("录屏系统声音支持", "恢复 SystemUI 录屏菜单的设备声音、麦克风及混合音源选择选项", HookConfig.KEY_RECORD_INTERNAL_AUDIO),
             HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将 “学习网站” 设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
         ),
         "桌面" to listOf(
-            HookItem("iOS 风格圆角", "统一应用图标与文件夹的连续圆角，保留应用原图，文件夹使用半透明底色。需勾选桌面作用域，重启桌面后生效", HookConfig.KEY_IOS_ICONS),
+            HookItem("iOS 风格圆角", "桌面应用图标与文件夹的改成 iOS 样式的圆角，文件夹使用半透明底色。强行停止 Launcher14 后生效", HookConfig.KEY_IOS_ICONS),
         ),
         "管控服务" to listOf(
             HookItem("拦截管控服务行为", "从 SystemServer 层拦截管控服务的强杀应用和移除任务行为", HookConfig.KEY_BLOCK_SUPERVISE),
             HookItem("阻止时长上报", "拦截管控服务的使用时长上传", HookConfig.KEY_BLOCK_USAGE_REPORT),
             HookItem("解除应用禁用", "将应用可用查询结果改为允许，绕过应用禁用和时长限制。已禁用的应用要先从其他应用打开一次才能从桌面启动", HookConfig.KEY_NEUTRALIZE_POLICY),
-            HookItem("解除页面屏蔽", "将受限页面查询结果置空，允许打开被管控规则屏蔽的应用页面", HookConfig.KEY_NEUTRALIZE_ADVANCE),
+            HookItem("解除页面屏蔽", "将受限页面查询结果置空，允许打开被屏蔽的页面", HookConfig.KEY_NEUTRALIZE_ADVANCE),
             HookItem("阻止超时锁屏", "拦截管控服务的超时处理，达到整机时长限制或超出可用时段后不锁屏", HookConfig.KEY_NO_TIMEOUT_LOCK),
         ),
     )
