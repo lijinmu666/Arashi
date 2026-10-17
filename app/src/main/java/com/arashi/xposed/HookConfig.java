@@ -33,6 +33,11 @@ public static final String KEY_BLOCK_SUPERVISE = "hook_block_supervise";
                 && !KEY_IOS_ICONS.equals(key)
                 && !KEY_ANDROID12_BLACKLIST_HOOK.equals(key)
                 && !KEY_DEV_OPTIONS_MENU.equals(key)
+                && !KEY_BLOCK_SUPERVISE.equals(key)
+                && !KEY_BLOCK_USAGE_REPORT.equals(key)
+                && !KEY_NEUTRALIZE_POLICY.equals(key)
+                && !KEY_NEUTRALIZE_ADVANCE.equals(key)
+                && !KEY_NO_TIMEOUT_LOCK.equals(key)
                 && !KEY_KEEP_BACKGROUND.equals(key);
     }
 
