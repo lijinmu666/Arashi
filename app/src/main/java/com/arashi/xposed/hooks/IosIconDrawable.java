@@ -26,6 +26,8 @@ final class IosIconDrawable extends Drawable {
         else kind = "original";
     }
 
+    Drawable original() { return original; }
+
     @Override public void draw(Canvas canvas) {
         Rect bounds = getBounds();
         if (bounds.isEmpty()) return;

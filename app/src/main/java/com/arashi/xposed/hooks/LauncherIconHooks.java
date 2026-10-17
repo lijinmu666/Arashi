@@ -46,6 +46,27 @@ public final class LauncherIconHooks {
             } catch (Throwable error) { Log.w("[Arashi-Icons]", "Image hook unavailable: " + name, error); }
         }
         try {
+            // Image loading can finish before the asynchronous settings read.
+            // Recheck at draw time so already-loaded icons also adopt the switch.
+            Method onDraw = ImageView.class.getDeclaredMethod("onDraw", Canvas.class);
+            module.hook(onDraw).intercept(chain -> {
+                ImageView image = (ImageView) chain.getThisObject();
+                if (!Boolean.TRUE.equals(STYLING.get())) {
+                    try {
+                        STYLING.set(true);
+                        if (ConfigManager.isEnabled(HookConfig.KEY_IOS_ICONS)) {
+                            styleImage(image);
+                        } else if (image.getDrawable() instanceof IosIconDrawable) {
+                            image.setImageDrawable(((IosIconDrawable) image.getDrawable()).original());
+                        }
+                    } catch (Exception error) {
+                        Log.w("[Arashi-Icons]", "Unable to refresh displayed icon", error);
+                    } finally { STYLING.remove(); }
+                }
+                return chain.proceed();
+            });
+        } catch (Throwable error) { Log.w("[Arashi-Icons]", "Image refresh hook unavailable", error); }
+        try {
             // Style only the displayed drawable, never the persistent icon cache.
             Class<?> fastIcon = Class.forName("g8.v", false, loader);
             Method draw = Reflect.findMethodExact(fastIcon, "a", Canvas.class, Rect.class);
@@ -67,7 +88,7 @@ public final class LauncherIconHooks {
                                 } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {}
                             }
                             if (source == null) {
-                                Bitmap bitmap = (Bitmap) field(target, "f24304b");
+                                Bitmap bitmap = (Bitmap) field(target, "b");
                                 if (bitmap == null || bitmap.getConfig() == Bitmap.Config.HARDWARE) return chain.proceed();
                                 source = new BitmapDrawable(null, bitmap);
                             }
@@ -77,10 +98,10 @@ public final class LauncherIconHooks {
                     }
                     styled.setBounds((Rect) chain.getArg(1));
                     Canvas canvas = (Canvas) chain.getArg(0);
-                    android.graphics.Paint originalPaint = (android.graphics.Paint) field(target, "f24303a");
+                    android.graphics.Paint originalPaint = (android.graphics.Paint) field(target, "a");
                     int save = canvas.saveLayer(new android.graphics.RectF(styled.getBounds()), originalPaint);
-                    styled.draw(canvas);
-                    canvas.restoreToCount(save);
+                    try { styled.draw(canvas); }
+                    finally { canvas.restoreToCount(save); }
                     return null;
                 } catch (Exception error) {
                     Log.w("[Arashi-Icons]", "Unable to draw styled launcher icon", error);
@@ -88,6 +109,7 @@ public final class LauncherIconHooks {
                 }
             });
         } catch (Throwable error) { Log.w("[Arashi-Icons]", "Launcher icon renderer unavailable", error); }
+        Log.i("[Arashi-Icons]", "Launcher icon hooks registered");
     }
 
     private static String identityFromTag(Object tag) throws IllegalAccessException {
@@ -116,7 +138,7 @@ public final class LauncherIconHooks {
             if (PRESET.equals(type)) {
                 if (field(parent, "bgKousuanPk") != image) return;
                 Object model = field(parent, "appInfoModel");
-                if (model != null) identity = (String) field(model, "f30189a");
+                if (model != null) identity = (String) field(model, "a");
             } else if (DOCK.equals(type)) {
                 if (field(parent, "imageView") != image) return;
                 Object element = Reflect.callMethod(parent, "getDockElement");
