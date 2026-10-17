@@ -480,6 +480,9 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("解除应用详情页限制", "允许打开 WebView、report服务 和 PadMs 的应用设置详情页。开关控制立即生效", HookConfig.KEY_CLEAR_DETAIL_BLACK),
             HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将 “学习网站” 设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
         ),
+        "桌面" to listOf(
+            HookItem("iOS 风格图标", "统一图标圆角外形，设置、相机、相册、浏览器、文件管理、应用商店和计算器使用 iOS 风格图案。需勾选作业帮桌面作用域，重启桌面后生效", HookConfig.KEY_IOS_ICONS),
+        ),
         "管控服务" to listOf(
             HookItem("拦截管控服务行为", "从 SystemServer 层拦截管控服务的强杀应用和移除任务行为", HookConfig.KEY_BLOCK_SUPERVISE),
             HookItem("阻止时长上报", "拦截管控服务的使用时长上传", HookConfig.KEY_BLOCK_USAGE_REPORT),
