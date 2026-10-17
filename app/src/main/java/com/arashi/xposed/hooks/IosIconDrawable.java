@@ -33,17 +33,64 @@ final class IosIconDrawable extends Drawable implements Drawable.Callback {
     Drawable original() { return original; }
 
     private static Path mask() {
+        // Continuous-corner approximation, not Apple's private mask formula.
+        // A wider corner span gives a rounder silhouette than the old n=5
+        // superellipse. Curvature eases to zero where each corner meets a side.
+        final int steps = 32;
+        final double span = 38;
+        double[] x = new double[steps + 1];
+        double[] y = new double[steps + 1];
+        double dt = 1.0 / steps;
+        for (int i = 0; i < steps; i++) {
+            double a = heading(i * dt), b = heading((i + .5) * dt);
+            double c = heading((i + 1) * dt);
+            x[i + 1] = x[i] + dt * (Math.cos(a) + 4 * Math.cos(b) + Math.cos(c)) / 6;
+            y[i + 1] = y[i] + dt * (Math.sin(a) + 4 * Math.sin(b) + Math.sin(c)) / 6;
+        }
+        double scale = span / ((x[steps] + y[steps]) / 2);
+        double handle = scale * dt / 3;
         Path path = new Path();
-        // Superellipse with exponent 5: smooth iOS-like continuous corners.
-        for (int i = 0; i <= 128; i++) {
-            double angle = i * Math.PI * 2 / 128;
-            double x = Math.cos(angle), y = Math.sin(angle);
-            float px = (float) (50 + 50 * Math.copySign(Math.pow(Math.abs(x), .4), x));
-            float py = (float) (50 + 50 * Math.copySign(Math.pow(Math.abs(y), .4), y));
-            if (i == 0) path.moveTo(px, py); else path.lineTo(px, py);
+        for (int corner = 0; corner < 4; corner++) {
+            float startX = rotateX((float) (100 - span), 0, corner);
+            float startY = rotateY((float) (100 - span), 0, corner);
+            if (corner == 0) path.moveTo(startX, startY); else path.lineTo(startX, startY);
+            for (int i = 0; i < steps; i++) {
+                double a = heading(i * dt), b = heading((i + 1) * dt);
+                float c1x = (float) (100 - span + x[i] * scale + handle * Math.cos(a));
+                float c1y = (float) (y[i] * scale + handle * Math.sin(a));
+                float c2x = (float) (100 - span + x[i + 1] * scale - handle * Math.cos(b));
+                float c2y = (float) (y[i + 1] * scale - handle * Math.sin(b));
+                float endX = (float) (100 - span + x[i + 1] * scale);
+                float endY = (float) (y[i + 1] * scale);
+                path.cubicTo(rotateX(c1x, c1y, corner), rotateY(c1x, c1y, corner),
+                        rotateX(c2x, c2y, corner), rotateY(c2x, c2y, corner),
+                        rotateX(endX, endY, corner), rotateY(endX, endY, corner));
+            }
         }
         path.close();
         return path;
+    }
+
+    private static double heading(double t) {
+        return Math.PI / 2 * t * t * (3 - 2 * t);
+    }
+
+    private static float rotateX(float x, float y, int corner) {
+        switch (corner) {
+            case 1: return 100 - y;
+            case 2: return 100 - x;
+            case 3: return y;
+            default: return x;
+        }
+    }
+
+    private static float rotateY(float x, float y, int corner) {
+        switch (corner) {
+            case 1: return x;
+            case 2: return 100 - y;
+            case 3: return 100 - x;
+            default: return y;
+        }
     }
 
     @Override public void draw(Canvas canvas) {
