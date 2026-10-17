@@ -12,6 +12,7 @@ import com.arashi.xposed.hooks.DevOptionsHooks;
 import com.arashi.xposed.hooks.InstallHooks;
 import com.arashi.xposed.hooks.LauncherWallpaperHooks;
 import com.arashi.xposed.hooks.LauncherIconHooks;
+import com.arashi.xposed.hooks.LauncherFolderHooks;
 import com.arashi.xposed.hooks.RestrictionHooks;
 import com.arashi.xposed.hooks.SuperviseHooks;
 import com.arashi.xposed.hooks.SystemUIHooks;
@@ -77,6 +78,7 @@ public final class HookEntry extends XposedModule {
             ConfigManager.init(pkg);
             LauncherWallpaperHooks.hookLauncher(this, param.getClassLoader());
             LauncherIconHooks.hookLauncher(this, param.getClassLoader());
+            LauncherFolderHooks.hookLauncher(this, param.getClassLoader());
         } else if (PKG_SYSTEMUI.equals(pkg)) {
             ConfigManager.init(pkg);
             SystemUIHooks.hookSystemUI(this, param.getClassLoader());

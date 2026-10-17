@@ -93,6 +93,14 @@ final class IosIconDrawable extends Drawable implements Drawable.Callback {
         }
     }
 
+    static Path maskFor(RectF bounds) {
+        Path path = new Path(MASK);
+        Matrix transform = new Matrix();
+        transform.setRectToRect(new RectF(0, 0, 100, 100), bounds, Matrix.ScaleToFit.FILL);
+        path.transform(transform);
+        return path;
+    }
+
     @Override public void draw(Canvas canvas) {
         Rect bounds = getBounds();
         if (bounds.isEmpty()) return;
