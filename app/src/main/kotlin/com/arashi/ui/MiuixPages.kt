@@ -478,6 +478,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("允许任意应用设置壁纸", "允许任意应用设置壁纸，并移除新版桌面覆盖系统壁纸的静态背景。需勾选系统框架与作业帮桌面作用域，开关控制立即生效", HookConfig.KEY_ALLOW_WALLPAPER),
             HookItem("允许 WiFi 网页登录", "允许连接到认证型 WiFi 跳转到登录验证网页", HookConfig.KEY_CAPTIVE_PORTAL),
             HookItem("解除应用详情页限制", "允许打开 WebView、report服务 和 PadMs 的应用设置详情页。开关控制立即生效", HookConfig.KEY_CLEAR_DETAIL_BLACK),
+            HookItem("录屏内部音频支持", "恢复设备声音、麦克风及混合音源选择，选择设备声音时不录制麦克风。重新打开录屏面板后生效", HookConfig.KEY_RECORD_INTERNAL_AUDIO),
             HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将 “学习网站” 设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
         ),
         "桌面" to listOf(
