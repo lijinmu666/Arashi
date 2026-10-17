@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 
 public final class LauncherIconHooks {
     private static final java.util.Map<Drawable, IosIconDrawable> DISPLAY_ICONS = new java.util.WeakHashMap<>();
+    private static final java.util.Map<Object, Float> CARD_RADII = new java.util.WeakHashMap<>();
     private static final ThreadLocal<Boolean> STYLING = new ThreadLocal<>();
     private static final String DOCK = "com.zuoyebang.iot.pad.launcher.mysubject.presentation.view.dock.DockView";
     private static final String PRESET = "com.zuoyebang.iot.pad.launcher.preset.view.PresetAppAdaptiveView";
@@ -57,6 +58,7 @@ public final class LauncherIconHooks {
                         if (ConfigManager.isEnabled(HookConfig.KEY_IOS_ICONS)) {
                             styleImage(image);
                         } else if (image.getDrawable() instanceof IosIconDrawable) {
+                            restoreCardRadius(image);
                             image.setImageDrawable(((IosIconDrawable) image.getDrawable()).original());
                         }
                     } catch (Exception error) {
@@ -130,24 +132,42 @@ public final class LauncherIconHooks {
 
     private static void styleImage(ImageView image) throws Exception {
         Drawable drawable = image.getDrawable();
-        if (drawable == null || drawable instanceof IosIconDrawable) return;
+        if (drawable == null) return;
         ViewParent parent = image.getParent();
         for (int depth = 0; parent instanceof View && depth < 8; depth++, parent = parent.getParent()) {
             String type = parent.getClass().getName();
             String identity = null;
             if (PRESET.equals(type)) {
                 if (field(parent, "bgKousuanPk") != image) return;
-                Object model = field(parent, "appInfoModel");
-                if (model != null) identity = (String) field(model, "a");
+                Object card = field(parent, "cardView");
+                if (!CARD_RADII.containsKey(card)) {
+                    CARD_RADII.put(card, ((Number) Reflect.callMethod(card, "getRadius")).floatValue());
+                }
+                if (((Number) Reflect.callMethod(card, "getRadius")).floatValue() != 0f) {
+                    Reflect.callMethod(card, "setRadius", 0f);
+                }
             } else if (DOCK.equals(type)) {
                 if (field(parent, "imageView") != image) return;
                 Object element = Reflect.callMethod(parent, "getDockElement");
                 if (element != null) identity = (String) Reflect.callMethod(element, "getPackageName");
             } else continue;
-            image.setImageDrawable(new IosIconDrawable(drawable, identity));
+            if (!(drawable instanceof IosIconDrawable)) {
+                image.setImageDrawable(new IosIconDrawable(drawable, identity));
+            }
             return;
         }
     }
+    private static void restoreCardRadius(ImageView image) throws Exception {
+        ViewParent parent = image.getParent();
+        for (int depth = 0; parent instanceof View && depth < 8; depth++, parent = parent.getParent()) {
+            if (!PRESET.equals(parent.getClass().getName())) continue;
+            Object card = field(parent, "cardView");
+            Float radius = CARD_RADII.remove(card);
+            if (radius != null) Reflect.callMethod(card, "setRadius", radius);
+            return;
+        }
+    }
+
     private static Object field(Object target, String name) throws Exception {
         for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
             try {

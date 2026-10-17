@@ -481,7 +481,7 @@ private fun HookPage(a: HookSettings) = Page(a, "Hook 功能设置", a::finish) 
             HookItem("阻止重设默认浏览器", "拦截 SystemUI 开机时将 “学习网站” 设为默认浏览器", HookConfig.KEY_BLOCK_DEFAULT_BROWSER),
         ),
         "桌面" to listOf(
-            HookItem("iOS 风格图标", "统一图标圆角外形 iOS 风格图案。新版需勾选桌面作用域，重启桌面后生效", HookConfig.KEY_IOS_ICONS),
+            HookItem("iOS 风格圆角", "仅调整图标的圆角轮廓，保留应用原图。需勾选桌面作用域，重启桌面后生效", HookConfig.KEY_IOS_ICONS),
         ),
         "管控服务" to listOf(
             HookItem("拦截管控服务行为", "从 SystemServer 层拦截管控服务的强杀应用和移除任务行为", HookConfig.KEY_BLOCK_SUPERVISE),
